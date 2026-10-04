@@ -1,0 +1,6 @@
+marker | detector A (u,v) mm   | detector B (u,v) mm   | reconstructed in CK  | true in CK          | MRE mm   | REM mm
+M1     | [ 21.2924 -12.3185]   | [21.8609 66.0477]     | [ 19. -28.  11.]     | [ 19. -28.  11.]    | 5.3e-14  | 1.1e-13  PASS
+M2     | [  4.0837 -82.2978]   | [  3.845  -39.4232]   | [-43. -14.   2.]     | [-43. -14.   2.]    | 5.3e-15  | 2.3e-13  PASS
+M3     | [-11.622  -68.4831]   | [-11.5902  62.8324]   | [ -2. -48.  -6.]     | [ -2. -48.  -6.]    | 1.2e-13  | 8.9e-16  PASS
+
+Number of failed checks: 0  ->  ALL CHECKS PASSED

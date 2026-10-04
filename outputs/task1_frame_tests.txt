@@ -1,0 +1,14 @@
+MD->CK mode: rotate180
+
+CK<-MD      point [0 0 0]                    predicted [0 0 0]            computed [0. 0. 0.]             PASS | inverse gives the point back: PASS | the centers of the MD and CK frames coincide
+CK<-MD      point [ 2 48 -6]                 predicted [ -2 -48  -6]      computed [ -2. -48.  -6.]       PASS | inverse gives the point back: PASS | M3 (spinous process) points to the table in supine pose
+DetA<-CK    point [-707.107  707.107    0.   ] predicted [   0    0 2000]   computed [   0.   -0. 2000.]    PASS | inverse gives the point back: PASS | the X-ray source is on the w axis, SDD = 2000 mm from the detector center
+DetA<-CK    point [ 7.071  7.071 10.   ]     predicted [  10   10 1000]   computed [  10.   10. 1000.]    PASS | inverse gives the point back: PASS | 10 mm along v_A and 10 mm along u from the CK center, which is SDD - SAD = 1000 mm from the detector
+DetB<-CK    point [707.107 707.107   0.   ]  predicted [   0    0 2000]   computed [   0.    0. 2000.]    PASS | inverse gives the point back: PASS | same as for detector A
+DetB<-CK    point [ 7.071 -7.071 10.   ]     predicted [  10   10 1000]   computed [  10.   10. 1000.]    PASS | inverse gives the point back: PASS | same as for detector A, with v_B
+ImgA<-DetA  point [0 0 0]                    predicted [1000 1000    0]   computed [1000. 1000.    0.]    PASS | inverse gives the point back: PASS | the detector center is the center of the image
+ImgA<-DetA  point [-100 -100    0]           predicted [0 0 0]            computed [0. 0. 0.]             PASS | inverse gives the point back: PASS | the lower left corner of the detector is the image frame center
+ImgB<-DetB  point [0 0 0]                    predicted [1000 1000    0]   computed [1000. 1000.    0.]    PASS | inverse gives the point back: PASS | same as for detector A
+ImgB<-DetB  point [-100 -100    0]           predicted [0 0 0]            computed [0. 0. 0.]             PASS | inverse gives the point back: PASS | same as for detector A
+
+Number of failed checks: 0  ->  ALL CHECKS PASSED

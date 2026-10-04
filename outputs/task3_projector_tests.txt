@@ -1,0 +1,11 @@
+point [0 0 0]              detector A: predicted (u,v) [0 0]      computed [0. 0.]        = pixel [1000. 1000.]    PASS
+point [0 0 0]              detector B: predicted (u,v) [0 0]      computed [0. 0.]        = pixel [1000. 1000.]    PASS
+      why: both beam central lines go through the CK center and hit the detector centers
+point [ 0  0 10]           detector A: predicted (u,v) [20  0]    computed [20.  0.]      = pixel [1200. 1000.]    PASS
+point [ 0  0 10]           detector B: predicted (u,v) [20  0]    computed [20.  0.]      = pixel [1200. 1000.]    PASS
+      why: +z is +u; the point is level with the CK center, halfway between source and detector, so its offset doubles
+point [7.071 7.071 0.   ]  detector A: predicted (u,v) [ 0 20]    computed [ 0. 20.]      = pixel [1000. 1200.]    PASS
+point [7.071 7.071 0.   ]  detector B: predicted (u,v) [0 0]      computed [0. 0.]        = pixel [1000. 1000.]    PASS
+      why: 10 mm along v_A from the CK center doubles to 20 mm on A; v_A = w_B, so on B it is on the beam central line
+
+Number of failed checks: 0  ->  ALL CHECKS PASSED

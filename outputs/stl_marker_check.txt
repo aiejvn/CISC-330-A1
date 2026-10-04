@@ -1,0 +1,19 @@
+STL file: LumbarVertebrae.-witrh-Markers.stl, 76426 triangles (Model frame, mm)
+the surface model has 6 separate pieces with [36249, 642, 642, 642, 40, 6] corner points
+  (skipping a piece that is not a sphere: 40 corner points near [-0.4 -4.7  6.7])
+
+marker balls in the STL vs the assignment's marker table (Model frame, mm):
+marker | table center     | STL ball center (avg of corners) | distance | STL diameter 2R | smallest/largest |Pi-C| | width in x, y, z
+M1     | [-19.  28.  11.] | ( -19.385,  27.951,  11.210)       | 0.442    | 2.0000          | 1.0000 / 1.0000        | [2. 2. 2.]
+M2     | [43. 14.  2.]    | (  43.063,  13.667,   1.984)       | 0.339    | 2.0000          | 1.0000 / 1.0000        | [2. 2. 2.]
+M3     | [ 2. 48. -6.]    | (   2.335,  48.104,  -5.941)       | 0.356    | 2.0000          | 1.0000 / 1.0000        | [2. 2. 2.]
+assignment: 'three identical spherical markers (M1, M2, M3), each 3 mm in diameter' (p.3)
+
+projected on the detectors (forward projector, MD->CK mode = rotate180):
+marker det | table center -> (u, v) mm | STL ball center -> (u, v) mm | difference mm | difference px
+M1     A   | ( 21.292, -12.319)       | ( 21.694, -11.721)          | 0.720         | 7.2
+M1     B   | ( 21.861,  66.048)       | ( 22.285,  66.541)          | 0.650         | 6.5
+M2     A   | (  4.084, -82.298)       | (  4.053, -81.932)          | 0.367         | 3.7
+M2     B   | (  3.845, -39.423)       | (  3.816, -39.969)          | 0.546         | 5.5
+M3     A   | (-11.622, -68.483)       | (-11.510, -69.096)          | 0.623         | 6.2
+M3     B   | (-11.590,  62.832)       | (-11.473,  62.498)          | 0.354         | 3.5
