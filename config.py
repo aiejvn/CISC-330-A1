@@ -50,6 +50,16 @@ MARKERS_MD_mm = np.array([[-19.0, 28.0, 11.0],    # M1 tip of right superior tra
                           [  2.0, 48.0, -6.0]])   # M3 tip of spinous (posterior) process
 MARKER_DIAMETER_mm = 3.0
 
+# ---- DRR (Task 5) -------------------------------------------------------------
+# Sphere phase: a sphere of radius 50 mm at the CK center, density 0.25 g/cm^3,
+# with the three markers inside. The steel density and the attenuation constant
+# k are NOT given in the assignment: they are our own assumptions (stated in the report).
+SPHERE_RADIUS_mm = 50.0
+SPHERE_DENSITY_g_cm3 = 0.25
+STEEL_DENSITY_g_cm3 = 7.85      # assumed (typical steel)
+ATTENUATION_K_cm2_g = 1.0       # assumed; I = I0 exp(-k sum(d x)), d in cm, x in g/cm^3
+BONE_DENSITY_g_cm3 = 1.0        # assumed (vertebra phase; not given in the assignment)
+
 # ---- How the vertebra model sits in the CK frame -------------------------------
 # The centers of the MD and CK frames coincide and their base vectors are
 # parallel (assignment). The vertebra lies in supine pose: in the MD frame the

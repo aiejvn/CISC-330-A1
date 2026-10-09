@@ -134,6 +134,22 @@ def line_plane_intersection(P, v, A, n):
     return points, t
 
 
+def line_sphere_chord(S, d, center, radius):
+    """
+    Length of the part of the lines S + t*d (t real) that lies inside a sphere.
+    d = unit directions, shape (3,) or (N, 3); S, center = (3,). With m = S - center,
+        |m + t d|^2 = R^2  ->  t^2 + 2 (m.d) t + (m.m - R^2) = 0
+    b = m.d, disc = b^2 - (m.m - R^2); roots t = -b +- sqrt(disc); chord = 2 sqrt(disc)
+    (0 if disc <= 0, i.e. the line misses the sphere). Needs |d| = 1.
+    """
+    S, center = np.asarray(S, float), np.asarray(center, float)
+    d = np.asarray(d, float)
+    m = S - center
+    b = d @ m
+    disc = b * b - (m @ m - radius ** 2)
+    return 2.0 * np.sqrt(np.maximum(disc, 0.0))
+
+
 def symbolic_intersection(P1, v1, P2, v2):
     """
     Symbolic intersection of two lines in 3D (Math Primer Part 1, slides

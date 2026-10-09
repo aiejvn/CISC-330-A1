@@ -1,0 +1,28 @@
+PASS  chord through the center = 2R  
+PASS  chord at distance 30 mm = 2 sqrt(R^2 - 900)  
+PASS  chord at distance 60 mm > R is 0  
+PASS  pixel middle pose A: direct == via F_Det_from_Img  
+PASS  pixel middle pose A lies in the detector plane  
+PASS  pixel middle pose B: direct == via F_Det_from_Img  
+PASS  pixel middle pose B lies in the detector plane  
+PASS  all marker balls inside the sphere  reach = [37.081 46.766 49.915] mm
+PASS  pose A: image shape 400 x 400  
+PASS  pose A: corner pixel I/I0 == 1  
+PASS  pose A: sphere-only pixel (k=200, j=200)  image 0.082086  predicted 0.082086
+PASS  pose A: sphere-only pixel (k=150, j=260)  image 0.100137  predicted 0.100137
+PASS  pose A: sphere-only pixel (k=320, j=90)  image 0.233596  predicted 0.233596
+PASS  pose A: M1 contrast at pixel (k=242, j=175)  I(with)/I(without) = 0.1024  (predicted 0.09-0.13)
+PASS  pose A: M2 contrast at pixel (k=208, j=35)  I(with)/I(without) = 0.1027  (predicted 0.09-0.13)
+PASS  pose A: M3 contrast at pixel (k=176, j=63)  I(with)/I(without) = 0.1033  (predicted 0.09-0.13)
+PASS  pose A: images equal away from the markers  
+PASS  pose B: image shape 400 x 400  
+PASS  pose B: corner pixel I/I0 == 1  
+PASS  pose B: sphere-only pixel (k=200, j=200)  image 0.082086  predicted 0.082086
+PASS  pose B: sphere-only pixel (k=150, j=260)  image 0.100137  predicted 0.100137
+PASS  pose B: sphere-only pixel (k=320, j=90)  image 0.233596  predicted 0.233596
+PASS  pose B: M1 contrast at pixel (k=243, j=332)  I(with)/I(without) = 0.1030  (predicted 0.09-0.13)
+PASS  pose B: M2 contrast at pixel (k=207, j=121)  I(with)/I(without) = 0.1028  (predicted 0.09-0.13)
+PASS  pose B: M3 contrast at pixel (k=176, j=325)  I(with)/I(without) = 0.1027  (predicted 0.09-0.13)
+PASS  pose B: images equal away from the markers  
+
+Number of failed checks: 0  ->  ALL CHECKS PASSED
