@@ -15,7 +15,7 @@ it, and what is left to do.
 | 5 | Digitally Reconstructed Radiograph (DRR) | done, tested (sphere phase: 3 mm balls at the table positions; vertebra phase: the STL's own 2 mm balls) | `drr.py`, `run_task5_drr.py`, `run_task5_vertebra.py`, `tests/test_task5_drr.py`, `tests/test_task5_vertebra.py` |
 | 6 | Marker Localization | done, tested (sphere and vertebra DRRs, both poses) | `localize.py`, `run_task6_localize.py`, `tests/test_task6_localization.py` |
 | 7 | Marker Reconstruction + REM | done, tested | `reconstruct.py`, `tests/test_task7_reconstruction.py` |
-| 8 | Marker Correspondences | done, tested (2 methods: REM and inter-marker distances) | `correspondence.py`, `tests/test_task8_correspondence.py` |
+| 8 | Marker Correspondences | done, tested (2 methods: REM and rigid fit of the marker model) | `correspondence.py`, `tests/test_task8_correspondence.py` |
 | 9 | Marker Ambiguity | **to do** | new file, e.g. `ambiguity.py` |
 | 10 | Marker Reconstruction Error Analysis | **to do** | new file, e.g. `error_analysis.py` |
 
@@ -155,25 +155,25 @@ the ball centers. No extra library needed.
 
 ### `drr.py` – Task 5 (DRR)
 One ray per pixel, from the source S through the middle of the pixel; image
-`img[j, k]` holds I/I0 with k = i1 (u direction) and j = i2 (v direction), so plot
-with `origin="lower"`. Attenuation: I/I0 = exp(-k Σ d_i x_i), d in cm, x in g/cm³.
-Assumed constants (not given in the assignment, set in `config.py`): steel
-7.85 g/cm³, k = 1.0 cm²/g, bone 1.0 g/cm³.
+`img[j, k]` holds the pixel value Σ d_i x_i (g/cm²; d in cm, x in g/cm³) with k = i1 (u direction)
+and j = i2 (v direction), so plot with `origin="lower"`. No intensity or attenuation constant is
+needed. Assumed densities (not given in the assignment, set in `config.py`): steel 7.85 g/cm³,
+bone 1.0 g/cm³. All markers are 2 mm (`drr.MARKER_DIAMETER_mm`).
 | function | returns | how |
 |---|---|---|
 | `n_pixels(pixel_mm)` | int | 2000 for 0.1 mm, 200 for 1 mm (coarse test) |
 | `pixel_centers_CK(pose, pixel_mm, rows)` | (rows, n, 3) | pixel middles (u, v, 0) moved to CK with `F_CK_from_Det` |
-| `render_drr(pose, pixel_mm, marker_centers_CK)` | I/I0 image | sphere phase: sphere R = 50 mm, density 0.25, with three 3 mm steel balls that *replace* sphere material along the ray (`geometry.line_sphere_chord`) |
+| `render_drr(pose, pixel_mm, marker_centers_CK)` | Σ d_i x_i image | sphere phase: sphere R = 50 mm, density 0.25, with three 2 mm steel balls that *replace* sphere material along the ray (`geometry.line_sphere_chord`) |
 | `mesh_path_length(triangles_CK, pose, pixel_mm)` | (length, balance) | vertebra phase: Moeller-Trumbore ray-triangle test. An exit face adds t, an entry face subtracts t, so no sorting of hits is needed. Each triangle is only tested on the pixels in the bounding box of its projection. `balance` (entries minus exits) must be 0 for a closed surface. |
-| `render_vertebra_drr(pose, pixel_mm, bone, balls)` | (I/I0, info) | bone path × bone density + ball path × steel density |
+| `render_vertebra_drr(pose, pixel_mm, bone, balls)` | (Σ d_i x_i, info) | bone path × bone density + ball path × steel density |
 
 ### `localize.py` – Task 6 (Marker Localization)
-Works on the absorbance -ln(I/I0), where a steel ball is a compact bump.
+Works on the DRR value Σ d_i x_i itself, where a steel ball is a compact bump (about 1.5).
 | function | returns | how |
 |---|---|---|
 | `blob_score(a)` | score image | mean of a 21 × 21 px box minus the same box mean 35 px to the left, right, up and down; the score is the smallest of the four. A bone edge is high on one side only (score ≈ 0), a ball on all four. |
 | `find_peaks(score, n)` | [(k, j, score)] | n best maxima at least 8 mm apart |
-| `refine_centroid(a, k, j)` | (i1, i2) px | plane fitted to the border of a 91 × 91 window, subtracted, then intensity-weighted center of the pixels above half the peak excess |
+| `refine_centroid(a, k, j)` | (i1, i2) px | plane fitted to the border of a 61 × 61 window, subtracted, then intensity-weighted center of the pixels above half the peak excess |
 | `refine_area_centroid(a, k, j)` | (i1, i2) px | same background removal, unweighted center of the connected region above half the peak (shape only) |
 | `localize_markers(img)` | dict `peak_px`, `centroid_px`, `area_px`, `score`, `next_score` | the three methods side by side; `next_score` is the 4th-best candidate and must be far below the markers' scores |
 | `image_px_to_detector_mm(px)` | (u, v) mm | inverse of `detector_to_image` |
@@ -182,13 +182,13 @@ The markers are identical, so the returned order (best score first) says
 nothing about M1, M2, M3. `centroid_px` is the result later tasks use.
 
 ### `correspondence.py` – Task 8 (Marker Correspondences)
-A pairing is a permutation `perm`: point i on A goes with point `perm[i]` on B (6 in total).
+A pairing is a permutation `perm`: point i on A goes with point `perm[i]` on B (N! in total, 6 for 3 markers).
 | function | returns | how |
 |---|---|---|
 | `match_by_rem(uv_A, uv_B)` | dict `perm`, `cost` | method 1: reconstruct all three pairs; cost = sum of the 3 REMs; smallest wins |
-| `match_by_distances(uv_A, uv_B)` | dict `perm`, `labels`, `cost` | method 2: reconstruct all three markers of a pairing and compare their 3 mutual distances with the known marker-table distances (best naming of the points); smallest cost wins. `labels` says which point is M1, M2, M3. |
+| `match_by_fit(uv_A, uv_B, model_mm)` | dict `perm`, `labels`, `cost`, `label_cost` | method 2: reconstruct the markers of a pairing and fit the known marker set to them (Kabsch/SVD, proper rotation + translation); cost = RMS residual of the best naming; smallest cost wins. `labels` says which point is M1, M2, M3; `label_cost` shows if several namings fit equally well (symmetric markers). Works for any N. |
 | `margin(cost)` | float | second-best / best cost; near 1 means ambiguous (the Task 9 situation) |
-| `correspond(uv_A, uv_B)` | dict | runs both methods, reports whether they `agree`, and returns the markers (CK) and REM of the method 1 pairing |
+| `correspond(uv_A, uv_B, model_mm)` | dict | runs both methods, reports whether they `agree`, and returns the markers (CK) and REM of the method 1 pairing |
 
 ### Runners and tests
 * `run_task2_markers.py`: saves the markers (above) and draws
@@ -212,7 +212,7 @@ A pairing is a permutation `perm`: point i on A goes with point `perm[i]` on B (
 |---|---|
 | `markers_task2.npz` | keys `MD`, `CK`, `DetA`, `DetB`: the three markers, shape (3, 3), mm |
 | `markers_projected_task4.npz` | keys `DetA_uv_mm`, `DetB_uv_mm` (shape (3, 2), mm) and `ImgA_px`, `ImgB_px` (shape (3, 2), pixels): the true marker projections, rows in the order M1, M2, M3 |
-| `drr_sphere_{A,B}.npy`, `drr_vertebra_{A,B}.npy` | the four DRRs, float I/I0, shape (2000, 2000), indexed `[j, k]` |
+| `drr_sphere_{A,B}.npy`, `drr_vertebra_{A,B}.npy` | the four DRRs, float Σ d_i x_i (g/cm²), shape (2000, 2000), indexed `[j, k]` |
 | `markers_stl_projected.npz` | keys `CK` (3, 3) STL ball centers, `DetA_uv_mm`, `DetB_uv_mm`, `ImgA_px`, `ImgB_px` (3, 2): true projections of the vertebra DRR's own balls (they differ from the table-based Task 4 projections by 0.35–0.72 mm) |
 | `markers_localized_task6.npz` | keys `<phase>_<pose>_px` and `<phase>_<pose>_uv_mm`, shape (3, 2), unordered |
 | `*.csv` | the same numbers, easy to open |
@@ -258,21 +258,21 @@ uv_A, uv_B = proj["DetA_uv_mm"], proj["DetB_uv_mm"]               # (3, 2) each
   (intensity-weighted) and `area_px` (unweighted shape). The detector coordinates
   come from `F_Det_from_Img()`.
 * Errors against the true projections (all checks in `outputs/task6_localization_tests.txt`):
-  sphere centroid below 0.01 mm; vertebra centroid 0.02–0.12 mm (about 0.2–1.2 px);
+  sphere centroid below 0.01 mm; vertebra centroid 0.02–0.07 mm (about 0.2–0.7 px);
   peak method up to 0.28 mm. The 4th-best candidate scores far below the weakest
   marker in all four images.
 * The vertebra is harder than the sphere because the bone behind a ball makes the
   background uneven; the plane fit and the four-sided score handle this.
 
 **Task 8 (Marker Correspondences) – done**
-* Method 1 (smallest sum of REM) and method 2 (reconstructed inter-marker
-  distances against the known ones) both find the true pairing for all six
+* Method 1 (smallest sum of REM) and method 2 (rigid fit of the marker model,
+  works for any number of markers) both find the true pairing for all six
   orderings of the points on detector B.
 * For the true pairing REM is ≈ 0. The best wrong pairing costs 15.83 mm in
-  summed REM and 7.49 mm in distance error, far above the correct one.
+  summed REM and 1.98 mm in fit error, far above the correct one.
 * With the localized points of Task 6 both methods still agree: sphere REM below
-  0.004 mm, vertebra REM below 0.03 mm, and every marker is reconstructed within
-  0.07 mm of the true position. The localized points are unordered, so this uses
+  0.005 mm, vertebra REM below 0.005 mm, and every marker is reconstructed within
+  0.04 mm of the true position. The localized points are unordered, so this uses
   the real pipeline Task 6 → Task 8 → Task 7.
 
 **Task 9 (Marker Ambiguity)**: ambiguity happens when a wrong pairing also gives

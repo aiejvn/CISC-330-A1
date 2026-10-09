@@ -5,24 +5,24 @@ PASS  pixel middle pose A: direct == via F_Det_from_Img
 PASS  pixel middle pose A lies in the detector plane  
 PASS  pixel middle pose B: direct == via F_Det_from_Img  
 PASS  pixel middle pose B lies in the detector plane  
-PASS  all marker balls inside the sphere  reach = [37.081 46.766 49.915] mm
+PASS  all marker balls inside the sphere  reach = [36.581 46.266 49.415] mm
 PASS  pose A: image shape 400 x 400  
-PASS  pose A: corner pixel I/I0 == 1  
-PASS  pose A: sphere-only pixel (k=200, j=200)  image 0.082086  predicted 0.082086
-PASS  pose A: sphere-only pixel (k=150, j=260)  image 0.100137  predicted 0.100137
-PASS  pose A: sphere-only pixel (k=320, j=90)  image 0.233596  predicted 0.233596
-PASS  pose A: M1 contrast at pixel (k=242, j=175)  I(with)/I(without) = 0.1024  (predicted 0.09-0.13)
-PASS  pose A: M2 contrast at pixel (k=208, j=35)  I(with)/I(without) = 0.1027  (predicted 0.09-0.13)
-PASS  pose A: M3 contrast at pixel (k=176, j=63)  I(with)/I(without) = 0.1033  (predicted 0.09-0.13)
+PASS  pose A: corner pixel value == 0  
+PASS  pose A: sphere-only pixel (k=200, j=200)  image 2.499984  predicted 2.499984
+PASS  pose A: sphere-only pixel (k=150, j=260)  image 2.301217  predicted 2.301217
+PASS  pose A: sphere-only pixel (k=320, j=90)  image 1.454162  predicted 1.454162
+PASS  pose A: M1 contrast at pixel (k=242, j=175)  DRR(with) - DRR(without) = 1.5187 g/cm^2  (predicted 1.3-1.6)
+PASS  pose A: M2 contrast at pixel (k=208, j=35)  DRR(with) - DRR(without) = 1.5145 g/cm^2  (predicted 1.3-1.6)
+PASS  pose A: M3 contrast at pixel (k=176, j=63)  DRR(with) - DRR(without) = 1.5056 g/cm^2  (predicted 1.3-1.6)
 PASS  pose A: images equal away from the markers  
 PASS  pose B: image shape 400 x 400  
-PASS  pose B: corner pixel I/I0 == 1  
-PASS  pose B: sphere-only pixel (k=200, j=200)  image 0.082086  predicted 0.082086
-PASS  pose B: sphere-only pixel (k=150, j=260)  image 0.100137  predicted 0.100137
-PASS  pose B: sphere-only pixel (k=320, j=90)  image 0.233596  predicted 0.233596
-PASS  pose B: M1 contrast at pixel (k=243, j=332)  I(with)/I(without) = 0.1030  (predicted 0.09-0.13)
-PASS  pose B: M2 contrast at pixel (k=207, j=121)  I(with)/I(without) = 0.1028  (predicted 0.09-0.13)
-PASS  pose B: M3 contrast at pixel (k=176, j=325)  I(with)/I(without) = 0.1027  (predicted 0.09-0.13)
+PASS  pose B: corner pixel value == 0  
+PASS  pose B: sphere-only pixel (k=200, j=200)  image 2.499984  predicted 2.499984
+PASS  pose B: sphere-only pixel (k=150, j=260)  image 2.301217  predicted 2.301217
+PASS  pose B: sphere-only pixel (k=320, j=90)  image 1.454162  predicted 1.454162
+PASS  pose B: M1 contrast at pixel (k=243, j=332)  DRR(with) - DRR(without) = 1.5097 g/cm^2  (predicted 1.3-1.6)
+PASS  pose B: M2 contrast at pixel (k=207, j=121)  DRR(with) - DRR(without) = 1.5120 g/cm^2  (predicted 1.3-1.6)
+PASS  pose B: M3 contrast at pixel (k=176, j=325)  DRR(with) - DRR(without) = 1.5134 g/cm^2  (predicted 1.3-1.6)
 PASS  pose B: images equal away from the markers  
 
 Number of failed checks: 0  ->  ALL CHECKS PASSED

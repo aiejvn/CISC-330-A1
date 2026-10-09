@@ -3,11 +3,11 @@ run_task5_vertebra.py - Task 5 (vertebra phase): DRRs of the STL vertebra with i
 2 mm marker balls, both poses, full resolution (PIXEL_MM = 0.1 -> 2000 x 2000).
 
 Saves
-  outputs/drr_vertebra_A.npy, drr_vertebra_B.npy   float I/I0, shape (n, n), indexed [j, k]
+  outputs/drr_vertebra_A.npy, drr_vertebra_B.npy   float sum d_i x_i in g/cm^2, shape (n, n), indexed [j, k]
   outputs/markers_stl_projected.npz                TRUE marker data of this DRR (Task 6 ground truth):
         CK (3, 3) STL ball centres in CK, DetA_uv_mm / DetB_uv_mm (3, 2), ImgA_px / ImgB_px (3, 2)
         (the table-based projections of Task 4 differ from these by 0.35 - 0.72 mm)
-  outputs/task5_drr_vertebra.png                   picture (absorbance -ln(I/I0)) with the true centres marked
+  outputs/task5_drr_vertebra.png                   picture (sum d_i x_i) with the true centres marked
 
 AI use: written with help from Claude (Anthropic), Oct 2026; reviewed and
 tested by the group.
@@ -40,13 +40,13 @@ for ax, pose in zip(axes, ("A", "B")):
     uv = project_to_detector(centers_CK, pose)
     truth[f"Det{pose}_uv_mm"] = uv
     truth[f"Img{pose}_px"] = detector_to_image(uv)
-    print(f"pose {pose}: I/I0 min {img.min():.3e} max {img.max():.3f}; "
+    print(f"pose {pose}: min {img.min():.3f} max {img.max():.3f} g/cm^2; "
           f"entry/exit balance nonzero pixels: bone {np.count_nonzero(info['bal_bone'])}, balls {np.count_nonzero(info['bal_balls'])}")
-    ax.imshow(-np.log(img), origin="lower", cmap="gray_r", extent=[-100, 100, -100, 100])
+    ax.imshow(img, origin="lower", cmap="gray_r", extent=[-100, 100, -100, 100])
     ax.plot(uv[:, 0], uv[:, 1], "r+", ms=14, mew=1)
     for name, (u, v) in zip(config.MARKER_NAMES, uv):
         ax.annotate(name, (u, v), color="r", xytext=(6, 6), textcoords="offset points")
-    ax.set_title(f"DRR pose {pose}: absorbance -ln(I/I0); red + = STL ball centres")
+    ax.set_title(f"DRR pose {pose}: sum d_i x_i (g/cm^2); red + = STL ball centres")
     ax.set_xlabel("u (mm) = image i1"); ax.set_ylabel("v (mm) = image i2")
 np.savez(os.path.join(config.OUTPUT_DIR, "markers_stl_projected.npz"), **truth)
 fig.tight_layout()

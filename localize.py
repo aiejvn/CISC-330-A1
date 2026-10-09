@@ -2,12 +2,12 @@
 localize.py - Task 6: Marker Localization.
 
 Find the centers of the three marker shadows in a DRR (pixels) and convert them
-to detector coordinates (mm). The DRR array is img[j, k] = I/I0 with k = image
+to detector coordinates (mm). The DRR array is img[j, k] = sum d_i x_i (Task 5) with k = image
 column = i1 and j = image row = i2; pixel (k, j) has its middle at (k + 0.5, j + 0.5)
 in the image frame, i.e. u = (k + 0.5) * 0.1 - 100 mm (see drr.py).
 
-Work on the absorbance a = -ln(I/I0): a steel ball adds a compact bump of
-about 1.5 - 2.3 to the absorbance of whatever lies behind it.
+Work on the DRR value a = sum d_i x_i itself: a steel ball adds a compact bump of
+about 1.5 to a (2 mm of steel, 7.85 g/cm^3) to whatever lies behind it.
 
 Step 1, detection (method "peak"). A marker is a spot that is higher than the
 ground on ALL FOUR sides. For every pixel we take the mean of a small box
@@ -18,7 +18,7 @@ slope is high on one side only, so its score is about 0; a ball is high on every
 side, so its score is large. The n best-scoring pixels (at least 8 mm apart)
 are the markers. This is accurate to about a pixel.
 
-Step 2, refinement (method "centroid"). In a 91 x 91 pixel window around each
+Step 2, refinement (method "centroid"). In a 61 x 61 pixel window around each
 peak, fit a plane to the border pixels (the local background), subtract it, keep
 the pixels whose excess is above half of the peak excess and take the excess-
 weighted center of gravity. That gives the center in fractions of a pixel.
@@ -36,13 +36,11 @@ from geometry import apply_transform
 BOX_PX = 21          # side of the small box (2.1 mm) that averages the center
 OFFSET_PX = 35       # distance (3.5 mm) of the four comparison boxes
 MIN_SEPARATION_PX = 80   # two markers are never closer than 8 mm on a detector (suppression radius)
-WINDOW_HALF_PX = 45  # refinement window is 91 x 91 pixels
+WINDOW_HALF_PX = 30  # refinement window is 61 x 61 pixels (6.1 mm). A shadow is about 34 px wide (half-max), so the
+                     # window needs the shadow plus a free 7 px frame: at 51 px the frame touches the shadow (sphere
+                     # error doubles); above ~71 px the plane no longer fits the curved bone (vertebra error 0.7 px at
+                     # 61 px, 1.2 px at 101 px, 1.7 px at 151 px). Measured against the true centers, Task 5/6.
 BORDER_PX = 7        # width of the frame of the window used for the background plane
-
-
-def absorbance(img):
-    """a = -ln(I / I0); I/I0 is clipped to a tiny positive value so the log is finite."""
-    return -np.log(np.clip(np.asarray(img, float), 1e-12, 1.0))
 
 
 def box_mean(a, win):
@@ -141,7 +139,7 @@ def localize_markers(img, n_markers=3):
     and "score" (n,): detection scores, best first, plus "next_score": the score of
     the (n+1)-th best candidate (it must be far below the markers' scores).
     """
-    a = absorbance(img)
+    a = np.asarray(img, float)
     score = blob_score(a)
     peaks = find_peaks(score, n_markers + 1)
     found, extra = peaks[:n_markers], peaks[n_markers]

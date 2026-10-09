@@ -18,7 +18,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import config
-from localize import localize_markers, absorbance, image_px_to_detector_mm
+from localize import localize_markers, image_px_to_detector_mm
 
 saved = {}
 fig, axes = plt.subplots(2, 4, figsize=(20, 10))
@@ -33,13 +33,13 @@ for row, phase in enumerate(("sphere", "vertebra")):
         for p, q in zip(res["peak_px"], px):
             print(f"   peak (i1, i2) = {p}   centroid = {np.round(q, 2)}   (u, v) = {np.round(image_px_to_detector_mm(q), 3)} mm")
         ax = axes[row, 2 * col]
-        ax.imshow(absorbance(img), origin="lower", cmap="gray_r", extent=[0, img.shape[1], 0, img.shape[0]])
+        ax.imshow(img, origin="lower", cmap="gray_r", extent=[0, img.shape[1], 0, img.shape[0]])
         ax.plot(px[:, 0], px[:, 1], "r+", ms=14, mew=1.5)
         ax.set_title(f"{phase} DRR, detector {pose}: found centers (red +)")
         ax.set_xlabel("i1 (px)"); ax.set_ylabel("i2 (px)")
         ax = axes[row, 2 * col + 1]                                    # zoom on the strongest marker
         k, j = int(px[0, 0]), int(px[0, 1])
-        ax.imshow(absorbance(img)[j - 60:j + 61, k - 60:k + 61], origin="lower", cmap="gray_r",
+        ax.imshow(img[j - 60:j + 61, k - 60:k + 61], origin="lower", cmap="gray_r",
                   extent=[k - 60, k + 61, j - 60, j + 61])
         ax.plot(px[0, 0], px[0, 1], "r+", ms=16, mew=1.5)
         ax.set_title(f"zoom on the best marker ({phase} {pose})")

@@ -1,7 +1,7 @@
 """
 run_task5_drr.py - Task 5 (sphere phase): render the DRRs of both poses and save them.
 
-Saves outputs/drr_sphere_A.npy, drr_sphere_B.npy (float I/I0, shape (n, n), indexed [j, k])
+Saves outputs/drr_sphere_A.npy, drr_sphere_B.npy (float sum d_i x_i in g/cm^2, shape (n, n), indexed [j, k])
 and outputs/task5_drr_sphere.png. Task 6 reads the .npy files, not the PNG.
 PIXEL_MM = 0.1 is the full resolution (2000 x 2000); use 1.0 for a quick coarse picture.
 
@@ -40,8 +40,8 @@ for ax, pose in zip(axes, ("A", "B")):
     # sphere and marker positions (CK frame) are seen from two different directions.
     img = drr.render_drr(pose, PIXEL_MM, M_CK)
     np.save(os.path.join(config.OUTPUT_DIR, f"drr_sphere_{pose}.npy"), img)
-    print(f"pose {pose}: shape {img.shape}, min intensity {img.min():.5f}, max intensity {img.max():.5f}")
-    ax.imshow(img, origin="lower", cmap="gray", extent=[-100, 100, -100, 100])   # origin lower: image frame origin = lower-left
+    print(f"pose {pose}: shape {img.shape}, min {img.min():.5f}, max {img.max():.5f} g/cm^2")
+    ax.imshow(img, origin="lower", cmap="gray_r", extent=[-100, 100, -100, 100])   # origin lower: image frame origin = lower-left
     # Text-only marker names (M1, M2, M3) next to each ball's shadow; the position comes from
     # the projector, which is the same geometry the rays above use. No symbols are drawn.
     for name, (u, v) in zip(config.MARKER_NAMES, project_to_detector(M_CK, pose)):

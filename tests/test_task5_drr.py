@@ -6,14 +6,14 @@ Why these checks, and what we predict before running:
     distance h from the center has length 2 sqrt(R^2 - h^2); a ray at h > R has 0.
  2. Pixel rays: the middle of pixel (k, j) must agree with F_CK_from_Det @ F_Det_from_Img
     (the route written in the README); and the ray of a pixel must hit the plane w = 0.
- 3. All markers lie inside the sphere (|M| + 1.5 < 50; M3 has only 0.1 mm to spare).
- 4. Corner pixel (u, v) = (-99.75, -99.75): its ray misses the sphere -> I/I0 = 1 exactly.
- 5. Sphere-only pixel value: I/I0 = exp(-k * 0.25 * chord/10) with chord from the
-    cross-product distance h = |(c - S) x d|  (a different formula than the quadratic).
+ 3. All markers lie inside the sphere (|M| + 1 < 50; the 2 mm balls).
+ 4. Corner pixel (u, v) = (-99.75, -99.75): its ray misses the sphere -> DRR value 0 exactly.
+ 5. Sphere-only pixel value: 0.25 * chord/10 with chord from the cross-product
+    distance h = |(c - S) x d|  (a different formula than the quadratic).
  6. Marker contrast: at the pixel containing a marker's true projection (Task 4), the
-    ray passes within ~0.2 mm of the ball center, so the ball chord is ~3 mm and
-        I(with) / I(without) = exp(-k * (7.85 - 0.25) * 0.3) = exp(-2.28) = 0.10.
-    Predicted range 0.09 - 0.13. This also catches a transposed image (img[j, k] vs img[k, j]).
+    ray passes within ~0.2 mm of the ball center, so the ball chord is ~2 mm and
+        DRR(with) - DRR(without) = (7.85 - 0.25) * 0.2 = 1.52 g/cm^2.
+    Predicted range 1.3 - 1.6. This also catches a transposed image (img[j, k] vs img[k, j]).
  7. Away from the markers the images with and without markers are identical.
 
 Run from the A1 folder:   python tests/test_task5_drr.py
@@ -68,7 +68,7 @@ for pose in ("A", "B"):
     check(f"pixel middle pose {pose} lies in the detector plane", abs((mid - w['C_CK']) @ w['w']) < 1e-9)
 
 # 3. markers inside
-reach = np.linalg.norm(M_CK, axis=1) + 1.5
+reach = np.linalg.norm(M_CK, axis=1) + drr.MARKER_DIAMETER_mm / 2
 check("all marker balls inside the sphere", np.all(reach < R), f"reach = {np.round(reach, 3)} mm")
 
 for pose in ("A", "B"):
@@ -78,7 +78,7 @@ for pose in ("A", "B"):
     check(f"pose {pose}: image shape {n} x {n}", img_with.shape == (400, 400))
 
     # 4. corner pixel misses the sphere
-    check(f"pose {pose}: corner pixel I/I0 == 1", img_without[0, 0] == 1.0 and img_with[0, 0] == 1.0)
+    check(f"pose {pose}: corner pixel value == 0", img_without[0, 0] == 0.0 and img_with[0, 0] == 0.0)
 
     # 5. sphere-only value from the cross-product distance
     det = frames.detector_geometry(pose)
@@ -87,7 +87,7 @@ for pose in ("A", "B"):
         d = (P - det["S_CK"]) / np.linalg.norm(P - det["S_CK"])
         h = np.linalg.norm(np.cross(-det["S_CK"], d))               # distance center-line, (c - S) x d with c = 0
         chord = 2 * np.sqrt(max(R**2 - h**2, 0.0))
-        pred = np.exp(-config.ATTENUATION_K_cm2_g * config.SPHERE_DENSITY_g_cm3 * chord / 10)
+        pred = config.SPHERE_DENSITY_g_cm3 * chord / 10
         check(f"pose {pose}: sphere-only pixel (k={k}, j={j})", abs(img_without[j, k] - pred) < 1e-12,
               f"image {img_without[j, k]:.6f}  predicted {pred:.6f}")
 
@@ -95,9 +95,9 @@ for pose in ("A", "B"):
     uv = project_to_detector(M_CK, pose)
     for name, (u, v) in zip(config.MARKER_NAMES, uv):
         k, j = int(np.floor((u + 100) / PIXEL_MM)), int(np.floor((v + 100) / PIXEL_MM))
-        ratio = img_with[j, k] / img_without[j, k]
-        check(f"pose {pose}: {name} contrast at pixel (k={k}, j={j})", 0.09 <= ratio <= 0.13,
-              f"I(with)/I(without) = {ratio:.4f}  (predicted 0.09-0.13)")
+        bump = img_with[j, k] - img_without[j, k]
+        check(f"pose {pose}: {name} contrast at pixel (k={k}, j={j})", 1.3 <= bump <= 1.6,
+              f"DRR(with) - DRR(without) = {bump:.4f} g/cm^2  (predicted 1.3-1.6)")
 
     # 7. images identical away from the markers (outside 8 mm of every projection)
     kk, jj = np.meshgrid(np.arange(n), np.arange(n))

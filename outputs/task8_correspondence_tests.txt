@@ -1,26 +1,30 @@
 PASS  true order: both methods give the identity pairing  
 PASS  true order: REM ~ 0 and markers reconstructed  (REM [1.77635684e-15 1.13687055e-13 1.13690307e-13])
 PASS  B order (0, 1, 2): both methods find (0, 1, 2)  (found (0, 1, 2) / (0, 1, 2))
-PASS  B order (0, 1, 2): every wrong pairing costs > 5 mm  (smallest wrong: REM sum 15.83 mm, distance error 7.49 mm)
+PASS  B order (0, 1, 2): every wrong pairing costs > 5 mm (method 1) / > 1 mm (method 2)  (smallest wrong: REM sum 15.83 mm, fit error 1.98 mm)
 PASS  B order (0, 1, 2): method 2 labels the markers 0, 1, 2  
 PASS  B order (0, 2, 1): both methods find (0, 2, 1)  (found (0, 2, 1) / (0, 2, 1))
-PASS  B order (0, 2, 1): every wrong pairing costs > 5 mm  (smallest wrong: REM sum 15.83 mm, distance error 7.49 mm)
+PASS  B order (0, 2, 1): every wrong pairing costs > 5 mm (method 1) / > 1 mm (method 2)  (smallest wrong: REM sum 15.83 mm, fit error 1.98 mm)
 PASS  B order (0, 2, 1): method 2 labels the markers 0, 1, 2  
 PASS  B order (1, 0, 2): both methods find (1, 0, 2)  (found (1, 0, 2) / (1, 0, 2))
-PASS  B order (1, 0, 2): every wrong pairing costs > 5 mm  (smallest wrong: REM sum 15.83 mm, distance error 7.49 mm)
+PASS  B order (1, 0, 2): every wrong pairing costs > 5 mm (method 1) / > 1 mm (method 2)  (smallest wrong: REM sum 15.83 mm, fit error 1.98 mm)
 PASS  B order (1, 0, 2): method 2 labels the markers 0, 1, 2  
 PASS  B order (1, 2, 0): both methods find (2, 0, 1)  (found (2, 0, 1) / (2, 0, 1))
-PASS  B order (1, 2, 0): every wrong pairing costs > 5 mm  (smallest wrong: REM sum 15.83 mm, distance error 7.49 mm)
+PASS  B order (1, 2, 0): every wrong pairing costs > 5 mm (method 1) / > 1 mm (method 2)  (smallest wrong: REM sum 15.83 mm, fit error 1.98 mm)
 PASS  B order (1, 2, 0): method 2 labels the markers 0, 1, 2  
 PASS  B order (2, 0, 1): both methods find (1, 2, 0)  (found (1, 2, 0) / (1, 2, 0))
-PASS  B order (2, 0, 1): every wrong pairing costs > 5 mm  (smallest wrong: REM sum 15.83 mm, distance error 7.49 mm)
+PASS  B order (2, 0, 1): every wrong pairing costs > 5 mm (method 1) / > 1 mm (method 2)  (smallest wrong: REM sum 15.83 mm, fit error 1.98 mm)
 PASS  B order (2, 0, 1): method 2 labels the markers 0, 1, 2  
 PASS  B order (2, 1, 0): both methods find (2, 1, 0)  (found (2, 1, 0) / (2, 1, 0))
-PASS  B order (2, 1, 0): every wrong pairing costs > 5 mm  (smallest wrong: REM sum 15.83 mm, distance error 7.49 mm)
+PASS  B order (2, 1, 0): every wrong pairing costs > 5 mm (method 1) / > 1 mm (method 2)  (smallest wrong: REM sum 15.83 mm, fit error 1.98 mm)
 PASS  B order (2, 1, 0): method 2 labels the markers 0, 1, 2  
-PASS  sphere (Task 6 points): both methods find the true pairing (2, 1, 0)  (found (2, 1, 0) / (2, 1, 0))
-PASS  sphere (Task 6 points): REM < 0.05 mm and markers within 0.5 mm  (REM [0.0038 0.0022 0.0004] mm, MRE [0.002 0.003 0.001] mm, method 2 cost 0.01 mm)
+PASS  sphere (Task 6 points): both methods find the true pairing (1, 2, 0)  (found (1, 2, 0) / (1, 2, 0))
+PASS  sphere (Task 6 points): REM < 0.05 mm and markers within 0.5 mm  (REM [0.0004 0.0007 0.0042] mm, MRE [0.001 0.001 0.004] mm, method 2 cost 0.00 mm)
 PASS  vertebra (Task 6 points): both methods find the true pairing (2, 0, 1)  (found (2, 0, 1) / (2, 0, 1))
-PASS  vertebra (Task 6 points): REM < 0.3 mm and markers within 0.5 mm  (REM [0.0103 0.0107 0.0251] mm, MRE [0.068 0.054 0.062] mm, method 2 cost 1.03 mm)
+PASS  vertebra (Task 6 points): REM < 0.3 mm and markers within 0.5 mm  (REM [0.0021 0.005  0.0008] mm, MRE [0.034 0.033 0.034] mm, method 2 cost 0.28 mm)
+PASS  equidistant markers: both methods find the pairing  
+PASS  equidistant markers: all 6 namings fit equally well  (6 namings with fit error < 1e-6 mm)
+PASS  our marker table: exactly 1 naming fits  (1 namings)
+PASS  4 markers: both methods undo all 24 orders of detector B and name the markers  
 
 Number of failed checks: 0  ->  ALL CHECKS PASSED

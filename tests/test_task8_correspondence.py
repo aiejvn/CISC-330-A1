@@ -1,5 +1,5 @@
 """
-Task 8 test: Marker Correspondences, both methods (REM and inter-marker distances).
+Task 8 test: Marker Correspondences, both methods (REM and rigid fit of the marker model).
 
 Assignment: test with the true projections, then with markers swapped on one detector.
 
@@ -11,13 +11,19 @@ Why these checks, and what we predict before running:
     list of B's true point i. Both methods must agree.
  3. A wrong pairing must look wrong: the smallest cost of any wrong pairing is predicted to be
     > 5 mm for method 1 (sum of 3 REMs; rays of different markers pass each other by several mm)
-    and > 5 mm for method 2 (sum of 3 distance errors).
+    and > 1 mm for method 2 (RMS residual of the rigid fit; the points of a wrong pairing are
+    somewhere else, so they do not have the shape of the marker set).
  4. Method 2 also names the markers: with detector A in the true order, the labels are (0, 1, 2).
  5. Points found by Task 6 in the DRRs (they come in an arbitrary order and carry small errors):
     both methods must still find the true pairing (known from the nearest true marker of every found
     point). Predicted REM < 0.05 mm (sphere) and < 0.3 mm (vertebra); the reconstructed markers
     must lie within 0.5 mm of the true CK markers. For the vertebra the known distances come from
-    the table while the STL balls are 0.3 - 0.7 mm off, so method 2's cost is about 1 mm there.
+    the table while the STL balls are 0.3 - 0.7 mm off, so method 2's cost is about 0.5 mm there.
+ 6. Other marker arrangements (the methods must not rely on our table): (a) three equidistant
+    markers (equilateral triangle): both methods still find the pairing, but all 6 namings fit
+    equally well, so method 2 cannot say which marker is which (predict 6 namings with error ~ 0;
+    our real table has exactly 1); (b) four markers at generic positions: all 4! = 24 orders of
+    detector B are undone by both methods.
 
 Run from the A1 folder:   python tests/test_task8_correspondence.py
 
@@ -28,7 +34,9 @@ import os, sys
 import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import config
-from correspondence import PERMUTATIONS, correspond, match_by_rem, match_by_distances
+from correspondence import PERMUTATIONS, permutations_of, correspond
+from geometry import rotation_x, rotation_y, apply_transform
+from projector import project_to_detector
 from markers import load_markers
 
 report, n_failed = [], 0
@@ -46,7 +54,7 @@ A, B = proj["DetA_uv_mm"], proj["DetB_uv_mm"]
 
 # 1. true projections, correct order
 r = correspond(A, B)
-check("true order: both methods give the identity pairing", r["rem"]["perm"] == (0, 1, 2) and r["distance"]["perm"] == (0, 1, 2))
+check("true order: both methods give the identity pairing", r["rem"]["perm"] == (0, 1, 2) and r["fit"]["perm"] == (0, 1, 2))
 check("true order: REM ~ 0 and markers reconstructed", np.all(r["REM"] < 1e-9) and np.allclose(r["markers_CK"], true_M, atol=1e-9),
       f"(REM {r['REM']})")
 
@@ -56,12 +64,12 @@ for order in PERMUTATIONS:
     expected = tuple(order.index(i) for i in range(3))   # A point i (true marker i) sits at position order.index(i)
     r = correspond(A, B_shuffled)
     check(f"B order {order}: both methods find {expected}",
-          r["rem"]["perm"] == expected and r["distance"]["perm"] == expected, f"(found {r['rem']['perm']} / {r['distance']['perm']})")
+          r["rem"]["perm"] == expected and r["fit"]["perm"] == expected, f"(found {r['rem']['perm']} / {r['fit']['perm']})")
     wrong = [i for i, p in enumerate(PERMUTATIONS) if p != expected]
     c1 = np.sort(r["rem"]["cost"])[1]
-    c2 = np.sort(r["distance"]["cost"])[1]
-    check(f"B order {order}: every wrong pairing costs > 5 mm", c1 > 5 and c2 > 5, f"(smallest wrong: REM sum {c1:.2f} mm, distance error {c2:.2f} mm)")
-    check(f"B order {order}: method 2 labels the markers 0, 1, 2", r["distance"]["labels"] == (0, 1, 2))
+    c2 = np.sort(r["fit"]["cost"])[1]
+    check(f"B order {order}: every wrong pairing costs > 5 mm (method 1) / > 1 mm (method 2)", c1 > 5 and c2 > 1, f"(smallest wrong: REM sum {c1:.2f} mm, fit error {c2:.2f} mm)")
+    check(f"B order {order}: method 2 labels the markers 0, 1, 2", r["fit"]["labels"] == (0, 1, 2))
 
 # 5. points localized in the DRRs (Task 6)
 loc = np.load(os.path.join(config.OUTPUT_DIR, "markers_localized_task6.npz"))
@@ -74,10 +82,34 @@ for phase, (truth, true_CK, rem_tol) in cases.items():
     expected = tuple(int(np.where(nB == nA[i])[0][0]) for i in range(3))
     r = correspond(uvA, uvB)
     check(f"{phase} (Task 6 points): both methods find the true pairing {expected}",
-          r["rem"]["perm"] == expected and r["distance"]["perm"] == expected, f"(found {r['rem']['perm']} / {r['distance']['perm']})")
+          r["rem"]["perm"] == expected and r["fit"]["perm"] == expected, f"(found {r['rem']['perm']} / {r['fit']['perm']})")
     mre = np.linalg.norm(r["markers_CK"] - true_CK[nA], axis=1)
     check(f"{phase} (Task 6 points): REM < {rem_tol} mm and markers within 0.5 mm", np.all(r["REM"] < rem_tol) and np.all(mre < 0.5),
-          f"(REM {np.round(r['REM'], 4)} mm, MRE {np.round(mre, 3)} mm, method 2 cost {r['distance']['cost'].min():.2f} mm)")
+          f"(REM {np.round(r['REM'], 4)} mm, MRE {np.round(mre, 3)} mm, method 2 cost {r['fit']['cost'].min():.2f} mm)")
+
+# 6. other marker arrangements
+def project_set(points):
+    return project_to_detector(points, "A"), project_to_detector(points, "B")
+
+
+tri = np.array([[0, 0, 0], [40, 0, 0], [20, 20 * np.sqrt(3), 0]], float)          # equilateral, side 40 mm
+tri = apply_transform(rotation_y(25) @ rotation_x(35), tri - tri.mean(axis=0))      # tilted so the markers differ in height
+uvA, uvB = project_set(tri)
+r = correspond(uvA, uvB, model_mm=tri)
+n_fit = int(np.sum(r["fit"]["label_cost"] < 1e-6))
+check("equidistant markers: both methods find the pairing", r["rem"]["perm"] == (0, 1, 2) and r["fit"]["perm"] == (0, 1, 2))
+check("equidistant markers: all 6 namings fit equally well", n_fit == 6, f"({n_fit} namings with fit error < 1e-6 mm)")
+n_tab = int(np.sum(correspond(*project_set(true_M))["fit"]["label_cost"] < 1e-6))
+check("our marker table: exactly 1 naming fits", n_tab == 1, f"({n_tab} namings)")
+
+four = np.array([[-25, 20, 10], [30, 15, -12], [5, -30, 25], [18, 28, 31]], float)  # generic positions, different heights
+uvA, uvB = project_set(four)
+ok_all = True
+for order in permutations_of(4):
+    expected = tuple(order.index(i) for i in range(4))
+    r = correspond(uvA, uvB[list(order)], model_mm=four)
+    ok_all &= (r["rem"]["perm"] == expected and r["fit"]["perm"] == expected and r["fit"]["labels"] == (0, 1, 2, 3))
+check("4 markers: both methods undo all 24 orders of detector B and name the markers", ok_all)
 
 report.append(f"\nNumber of failed checks: {n_failed}  ->  "
               f"{'ALL CHECKS PASSED' if n_failed == 0 else 'SOME CHECKS FAILED, see FAIL above'}")

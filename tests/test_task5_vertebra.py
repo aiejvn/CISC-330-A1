@@ -19,7 +19,7 @@ Why these checks, and what we predict before running:
     within ~0.2 mm of the centre of a 2 mm ball whose mesh is inscribed (642 corners),
     so the chord is slightly under 2 mm: predict 1.9 - 2.0 mm for every ball and pose.
     (This also catches a transposed image: img[j, k] vs img[k, j].)
- 6. Intensity: at that pixel I/I0 = exp(-k (x_bone l_bone + x_steel l_balls)/10) is reproduced.
+ 6. Pixel value: at that pixel the DRR = (x_bone l_bone + x_steel l_balls)/10 is reproduced.
 
 Run from the A1 folder:   python tests/test_task5_vertebra.py
 
@@ -107,15 +107,14 @@ for pose in ("A", "B"):
         worst = max(worst, abs(brute_force_length(bone, S, d) - info["l_bone"][j, k]))
     check(f"pose {pose}: fast == brute force (sorted pairing), 300 rays", worst < 1e-9, f"worst difference {worst:.2e} mm")
 
-    # 5. ball chord at the projected STL centre; 6. intensity
+    # 5. ball chord at the projected STL centre; 6. pixel value
     uv = project_to_detector(centers_CK, pose)
     for name, (u, v) in zip(config.MARKER_NAMES, uv):
         k, j = int(np.floor((u + 100) / PIXEL_MM)), int(np.floor((v + 100) / PIXEL_MM))
         chord = info["l_balls"][j, k]
         check(f"pose {pose}: {name} ball chord at pixel (k={k}, j={j})", 1.9 <= chord <= 2.0, f"{chord:.4f} mm (predicted 1.9 - 2.0)")
-        expect = np.exp(-config.ATTENUATION_K_cm2_g * (config.BONE_DENSITY_g_cm3 * info["l_bone"][j, k]
-                                                       + config.STEEL_DENSITY_g_cm3 * chord) / 10)
-        check(f"pose {pose}: {name} intensity formula", abs(img[j, k] - expect) < 1e-12, f"I/I0 = {img[j, k]:.6f}")
+        expect = (config.BONE_DENSITY_g_cm3 * info["l_bone"][j, k] + config.STEEL_DENSITY_g_cm3 * chord) / 10
+        check(f"pose {pose}: {name} pixel value formula", abs(img[j, k] - expect) < 1e-12, f"sum d x = {img[j, k]:.6f} g/cm^2")
 
 report.append(f"\nNumber of failed checks: {n_failed}  ->  "
               f"{'ALL CHECKS PASSED' if n_failed == 0 else 'SOME CHECKS FAILED, see FAIL above'}")
