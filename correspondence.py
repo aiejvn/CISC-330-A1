@@ -45,12 +45,15 @@ def permutations_of(n):
 
 def reconstruct_pairing(uv_A, uv_B, perm):
     """Reconstruct the N pairs (A point i, B point perm[i]). Returns (markers (N, 3) in CK, REM (N,))."""
+    # Task 7 module: intersect the two back-projection lines of each pair; REM = how far the lines miss each other
     results = [reconstruct_point(uv_A[i], uv_B[perm[i]]) for i in range(len(perm))]
     return np.array([r[0] for r in results]), np.array([r[1] for r in results])
 
 
 def match_by_rem(uv_A, uv_B):
     """Method 1. Returns dict: perm (best pairing), cost (N!,) sum of REM per pairing in permutations_of(N) order."""
+    # lines from the same marker meet (REM ~ 0), lines from different markers miss by several mm,
+    # so the right pairing is the one with the smallest total miss distance
     perms = permutations_of(len(uv_A))
     cost = np.array([reconstruct_pairing(uv_A, uv_B, p)[1].sum() for p in perms])
     return {"perm": perms[int(cost.argmin())], "cost": cost}
@@ -61,8 +64,9 @@ def rigid_fit_error(model, points):
     RMS residual (mm) after the best proper rigid motion (rotation + translation) of `model`
     (N, 3) onto `points` (N, 3): Kabsch with the SVD of the covariance of the centered sets.
     """
-    P, Q = model - model.mean(axis=0), points - points.mean(axis=0)
-    U, _, Vt = np.linalg.svd(P.T @ Q)
+    P, Q = model - model.mean(axis=0), points - points.mean(axis=0)    # centering removes the translation
+    U, _, Vt = np.linalg.svd(P.T @ Q)                                  # the SVD of the covariance gives the best rotation
+    # without the sign correction the SVD can return a mirror image (det = -1), which a rigid body never is
     D = np.diag([1.0, 1.0, np.sign(np.linalg.det(Vt.T @ U.T))])      # det = +1: no mirror image
     R = Vt.T @ D @ U.T
     return float(np.sqrt(np.mean(np.sum((P @ R.T - Q) ** 2, axis=1))))
@@ -79,7 +83,9 @@ def match_by_fit(uv_A, uv_B, model_mm=None):
     perms = permutations_of(len(model))
     cost, label_costs = [], []
     for p in perms:
-        M, _ = reconstruct_pairing(uv_A, uv_B, p)
+        M, _ = reconstruct_pairing(uv_A, uv_B, p)      # the points this pairing would give
+        # which point is M1, M2, M3 is also unknown, so try every naming and keep the best fit; the costs
+        # of all namings are kept: several near 0 means a symmetric marker set (no unique naming)
         per_label = np.array([rigid_fit_error(model[list(l)], M) for l in perms])
         cost.append(per_label.min())
         label_costs.append(per_label)
@@ -101,7 +107,8 @@ def correspond(uv_A, uv_B, model_mm=None):
     pairing to use = method 1), markers_CK (N, 3) reconstructed with it, REM (N,).
     """
     uv_A, uv_B = np.asarray(uv_A, float), np.asarray(uv_B, float)
-    r1, r2 = match_by_rem(uv_A, uv_B), match_by_fit(uv_A, uv_B, model_mm)
+    r1, r2 = match_by_rem(uv_A, uv_B), match_by_fit(uv_A, uv_B, model_mm)   # two independent kinds of knowledge
+    # method 1 is used for the reconstruction (larger margin); method 2 is the check and gives the names
     M, rem = reconstruct_pairing(uv_A, uv_B, r1["perm"])
     return {"rem": r1, "fit": r2, "agree": r1["perm"] == r2["perm"],
             "perm": r1["perm"], "markers_CK": M, "REM": rem}

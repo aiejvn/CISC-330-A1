@@ -52,27 +52,31 @@ def check_markers_inside_sphere(marker_centers_CK):
         raise ValueError(f"a marker ball sticks out of the sphere (reach {reach} mm)")
 
 
-def render_drr(pose, pixel_mm, marker_centers_CK, with_markers=True, chunk_rows=50):
+def render_sphere_drr(pose, pixel_mm, marker_centers_CK, with_markers=True, chunk_rows=50):
     """
     DRR of the sphere (+ markers) for pose "A" or "B": sum d_i x_i in g/cm^2, shape (n, n), indexed [j, k].
     Processed in chunks of rows so that the full 2000 x 2000 image fits in memory.
     """
     marker_centers_CK = np.asarray(marker_centers_CK, float)
     check_markers_inside_sphere(marker_centers_CK)
-    S = frames.detector_geometry(pose)["S_CK"]
+    S = frames.detector_geometry(pose)["S_CK"]          # this pose's own source: nothing is shared between A and B
     n = n_pixels(pixel_mm)
     r_ball = MARKER_DIAMETER_mm / 2
     img = np.zeros((n, n))
     for r0 in range(0, n, chunk_rows):
         rows = np.arange(r0, min(n, r0 + chunk_rows))
-        P = pixel_centers_CK(pose, pixel_mm, rows).reshape(-1, 3)
+        P = pixel_centers_CK(pose, pixel_mm, rows).reshape(-1, 3)    # one target point per pixel
         d = P - S
         d /= np.linalg.norm(d, axis=1, keepdims=True)                          # unit direction S -> pixel
+        # the chord (length of the ray inside a sphere) is the d_i of the slides' sum; we need it for the
+        # sphere and for every ball, and it has an exact closed form (geometry.line_sphere_chord)
         l_sphere = line_sphere_chord(S, d, np.zeros(3), config.SPHERE_RADIUS_mm)   # mm
         l_balls = np.zeros_like(l_sphere)
         if with_markers:
             for M in marker_centers_CK:
                 l_balls += line_sphere_chord(S, d, M, r_ball)                  # balls are disjoint
+        # inside a ball the ray sees steel instead of sphere material, so the ball chord is taken out of
+        # the sphere chord (density 0.25) and counted with the steel density instead
         sum_dx = (config.SPHERE_DENSITY_g_cm3 * (l_sphere - l_balls)
                   + config.STEEL_DENSITY_g_cm3 * l_balls) / 10.0               # mm -> cm
         img[rows] = sum_dx.reshape(len(rows), n)
@@ -113,9 +117,13 @@ def mesh_path_length(triangles_CK, pose, pixel_mm):
     tri = np.asarray(triangles_CK, float)
     v0, e1, e2 = tri[:, 0], tri[:, 1] - tri[:, 0], tri[:, 2] - tri[:, 0]
     s = S - v0
+    # everything that depends only on the triangle (not on the ray) is computed once per triangle;
+    # a ray only enters through a dot product with the vectors in G
     G = np.stack([np.cross(e2, e1), np.cross(e2, s), np.cross(s, e1)], axis=2)   # (N, 3, 3): columns g_a, g_u, g_v/q
     t_num = np.einsum("ij,ij->i", e2, G[:, :, 2])                                # e2 . (s x e1)
 
+    # a triangle can only be hit by rays whose pixel lies inside the projection of its corners, so we find
+    # that pixel box first; this turns 76 426 triangles x 4 million rays into many small loops
     half = config.DETECTOR_SIZE_mm / 2
     pix = (project_to_detector(tri.reshape(-1, 3), pose) + half) / pixel_mm      # projected corners in pixel units
     pix = pix.reshape(-1, 3, 2)
@@ -127,7 +135,7 @@ def mesh_path_length(triangles_CK, pose, pixel_mm):
                | (pix[:, :, 1].max(axis=1) < 0) | (pix[:, :, 1].min(axis=1) > n))
 
     length = np.zeros((n, n))
-    balance = np.zeros((n, n), dtype=int)
+    balance = np.zeros((n, n), dtype=int)       # entries minus exits per ray: a consistency check
     for i in np.flatnonzero(~outside):
         d = D[j0[i]:j1[i] + 1, k0[i]:k1[i] + 1]
         A, B, C = np.moveaxis(d @ G[i], -1, 0)                  # a, d.(e2 x s), d.(s x e1)
@@ -147,8 +155,8 @@ def render_vertebra_drr(pose, pixel_mm, bone_triangles_CK, ball_triangles_CK_lis
     balls only touch the bone surface, so the overlap is a sliver and is ignored.
     Returns (DRR, info) where info holds the path lengths and the entry/exit balance.
     """
-    l_bone, bal_bone = mesh_path_length(bone_triangles_CK, pose, pixel_mm)
-    l_balls = np.zeros_like(l_bone)
+    l_bone, bal_bone = mesh_path_length(bone_triangles_CK, pose, pixel_mm)   # d for the bone surface
+    l_balls = np.zeros_like(l_bone)                                          # d for the three STL balls
     bal_balls = np.zeros_like(bal_bone)
     for tri in ball_triangles_CK_list:
         l, b = mesh_path_length(tri, pose, pixel_mm)

@@ -64,6 +64,8 @@ def _shift(m, dj, dk):
 
 def blob_score(a):
     """Smallest difference between the center box and the four boxes OFFSET_PX away (left/right/up/down)."""
+    # a ball is higher than the ground on all four sides; a bone edge or a slope is higher on one side
+    # only. Taking the smallest of the four differences keeps the ball and removes the edges.
     m = box_mean(a, BOX_PX)
     d = OFFSET_PX
     return np.min([m - _shift(m, dj, dk) for dj, dk in ((0, d), (0, -d), (d, 0), (-d, 0))], axis=0)
@@ -72,7 +74,7 @@ def blob_score(a):
 def find_peaks(score, n_markers=3):
     """The n best local maxima of the score, at least MIN_SEPARATION_PX apart. Returns [(k, j, score), ...]."""
     s = score.copy()
-    peaks = []
+    peaks = []          # greedy: take the best pixel, then erase its surroundings so a marker is not found twice
     for _ in range(n_markers):
         j, k = np.unravel_index(np.argmax(s), s.shape)
         peaks.append((int(k), int(j), float(s[j, k])))
@@ -83,6 +85,8 @@ def find_peaks(score, n_markers=3):
 
 def _excess_window(a, k0, j0):
     """Absorbance in the window around pixel (k0, j0) minus a plane fitted to the window border; with pixel indices K, J."""
+    # background = the plane through the frame of the window (what the bone behind the ball would be
+    # without the ball); subtracting it leaves only the bump of the ball itself
     n_j, n_k = a.shape
     j_lo, j_hi = max(0, j0 - WINDOW_HALF_PX), min(n_j, j0 + WINDOW_HALF_PX + 1)
     k_lo, k_hi = max(0, k0 - WINDOW_HALF_PX), min(n_k, k0 + WINDOW_HALF_PX + 1)
@@ -102,6 +106,8 @@ def refine_centroid(a, k0, j0):
     the peak excess counts with a weight equal to its excess.
     """
     excess, K, J = _excess_window(a, k0, j0)
+    # keep only the shadow itself (above half of the peak) so that noise and background do not pull the
+    # center; the excess is the weight, so the deepest part of the shadow counts most
     w = np.where(excess > 0.5 * excess.max(), excess, 0.0)
     return (np.sum(w * (K + 0.5)) / w.sum(), np.sum(w * (J + 0.5)) / w.sum())   # (i1, i2)
 
@@ -115,7 +121,7 @@ def refine_area_centroid(a, k0, j0):
     excess, K, J = _excess_window(a, k0, j0)
     mask = excess > 0.5 * excess.max()
     seed = (j0 - J[0, 0], k0 - K[0, 0])                       # peak pixel inside the window
-    region = np.zeros_like(mask)
+    region = np.zeros_like(mask)     # connected region only: other bright bone above half the peak is not the ball
     stack = [seed] if mask[seed] else [np.unravel_index(np.argmax(excess), excess.shape)]
     while stack:                                              # flood fill, 4-connected
         r, c = stack.pop()
@@ -140,9 +146,9 @@ def localize_markers(img, n_markers=3):
     the (n+1)-th best candidate (it must be far below the markers' scores).
     """
     a = np.asarray(img, float)
-    score = blob_score(a)
-    peaks = find_peaks(score, n_markers + 1)
-    found, extra = peaks[:n_markers], peaks[n_markers]
+    score = blob_score(a)                                  # step 1: detection (pixel accurate)
+    peaks = find_peaks(score, n_markers + 1)               # one extra peak: it must score far below the markers
+    found, extra = peaks[:n_markers], peaks[n_markers]     # step 2 (refinement) is done per marker below
     return {"peak_px": np.array([[k + 0.5, j + 0.5] for k, j, _ in found]),
             "centroid_px": np.array([refine_centroid(a, k, j) for k, j, _ in found]),
             "area_px": np.array([refine_area_centroid(a, k, j) for k, j, _ in found]),

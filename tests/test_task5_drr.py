@@ -72,8 +72,8 @@ reach = np.linalg.norm(M_CK, axis=1) + drr.MARKER_DIAMETER_mm / 2
 check("all marker balls inside the sphere", np.all(reach < R), f"reach = {np.round(reach, 3)} mm")
 
 for pose in ("A", "B"):
-    img_with = drr.render_drr(pose, PIXEL_MM, M_CK, with_markers=True)
-    img_without = drr.render_drr(pose, PIXEL_MM, M_CK, with_markers=False)
+    img_with = drr.render_sphere_drr(pose, PIXEL_MM, M_CK, with_markers=True)
+    img_without = drr.render_sphere_drr(pose, PIXEL_MM, M_CK, with_markers=False)
     n = img_with.shape[0]
     check(f"pose {pose}: image shape {n} x {n}", img_with.shape == (400, 400))
 

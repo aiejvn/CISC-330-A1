@@ -26,9 +26,9 @@ for row, phase in enumerate(("sphere", "vertebra")):
     for col, pose in enumerate(("A", "B")):
         img = np.load(os.path.join(config.OUTPUT_DIR, f"drr_{phase}_{pose}.npy"))
         res = localize_markers(img)
-        px = res["centroid_px"]
+        px = res["centroid_px"]          # the sub-pixel, weighted center of step 2 is what later tasks use
         saved[f"{phase}_{pose}_px"] = px
-        saved[f"{phase}_{pose}_uv_mm"] = image_px_to_detector_mm(px)
+        saved[f"{phase}_{pose}_uv_mm"] = image_px_to_detector_mm(px)   # image frame (pixels) -> detector frame (mm) for Task 7
         print(f"{phase} {pose}: scores {np.round(res['score'], 3)}, next candidate {res['next_score']:.3f}")
         for p, q in zip(res["peak_px"], px):
             print(f"   peak (i1, i2) = {p}   centroid = {np.round(q, 2)}   (u, v) = {np.round(image_px_to_detector_mm(q), 3)} mm")

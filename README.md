@@ -12,7 +12,7 @@ it, and what is left to do.
 | 2 | Marker Transforms | done | `markers.py`, `run_task2_markers.py` |
 | 3 | Forward Projector | done, tested | `projector.py`, `tests/test_task3_projector.py` |
 | 4 | Marker Projector | done | `run_task4_marker_projection.py` |
-| 5 | Digitally Reconstructed Radiograph (DRR) | done, tested (sphere phase: 3 mm balls at the table positions; vertebra phase: the STL's own 2 mm balls) | `drr.py`, `run_task5_drr.py`, `run_task5_vertebra.py`, `tests/test_task5_drr.py`, `tests/test_task5_vertebra.py` |
+| 5 | Digitally Reconstructed Radiograph (DRR) | done, tested (sphere phase: 3 mm balls at the table positions; vertebra phase: the STL's own 2 mm balls) | `drr.py`, `run_task5_drr.py`, `tests/test_task5_drr.py`, `tests/test_task5_vertebra.py` |
 | 6 | Marker Localization | done, tested (sphere and vertebra DRRs, both poses) | `localize.py`, `run_task6_localize.py`, `tests/test_task6_localization.py` |
 | 7 | Marker Reconstruction + REM | done, tested | `reconstruct.py`, `tests/test_task7_reconstruction.py` |
 | 8 | Marker Correspondences | done, tested (2 methods: REM and rigid fit of the marker model) | `correspondence.py`, `tests/test_task8_correspondence.py` |
@@ -35,9 +35,8 @@ python3 run_task2_markers.py
 python3 tests/test_task3_projector.py
 python3 run_task4_marker_projection.py
 python3 tests/test_task7_reconstruction.py
-python3 run_task5_drr.py            # sphere DRRs, 2000 x 2000, takes a while
+python3 run_task5_drr.py            # sphere DRRs, then vertebra DRRs (needs data/ STL), 2000 x 2000, slow
 python3 tests/test_task5_drr.py
-python3 run_task5_vertebra.py      # vertebra DRRs (needs data/ STL), slowest step
 python3 tests/test_task5_vertebra.py
 python3 run_task6_localize.py      # reads the four DRR .npy files from Task 5
 python3 tests/test_task6_localization.py
@@ -163,7 +162,7 @@ bone 1.0 g/cm³. All markers are 2 mm (`drr.MARKER_DIAMETER_mm`).
 |---|---|---|
 | `n_pixels(pixel_mm)` | int | 2000 for 0.1 mm, 200 for 1 mm (coarse test) |
 | `pixel_centers_CK(pose, pixel_mm, rows)` | (rows, n, 3) | pixel middles (u, v, 0) moved to CK with `F_CK_from_Det` |
-| `render_drr(pose, pixel_mm, marker_centers_CK)` | Σ d_i x_i image | sphere phase: sphere R = 50 mm, density 0.25, with three 2 mm steel balls that *replace* sphere material along the ray (`geometry.line_sphere_chord`) |
+| `render_sphere_drr(pose, pixel_mm, marker_centers_CK)` | Σ d_i x_i image | sphere phase: sphere R = 50 mm, density 0.25, with three 2 mm steel balls that *replace* sphere material along the ray (`geometry.line_sphere_chord`) |
 | `mesh_path_length(triangles_CK, pose, pixel_mm)` | (length, balance) | vertebra phase: Moeller-Trumbore ray-triangle test. An exit face adds t, an entry face subtracts t, so no sorting of hits is needed. Each triangle is only tested on the pixels in the bounding box of its projection. `balance` (entries minus exits) must be 0 for a closed surface. |
 | `render_vertebra_drr(pose, pixel_mm, bone, balls)` | (Σ d_i x_i, info) | bone path × bone density + ball path × steel density |
 
@@ -199,8 +198,7 @@ A pairing is a permutation `perm`: point i on A goes with point `perm[i]` on B (
 * `tests/test_task1_frames.py`: two points per transform with predicted results, plus each inverse.
 * `tests/test_task3_projector.py`: three points projected onto both detectors with predicted results.
 * `tests/test_task7_reconstruction.py`: feeds the Task 4 projections back in and checks that the true markers come out with MRE and REM near zero.
-* `run_task5_drr.py`: sphere DRRs for both poses (2000 × 2000) → `outputs/drr_sphere_{A,B}.npy`, `task5_drr_sphere.png`.
-* `run_task5_vertebra.py`: splits the STL into bone and its own 2 mm balls, renders both poses → `outputs/drr_vertebra_{A,B}.npy`, `task5_drr_vertebra.png`, and `markers_stl_projected.npz` (true projections of the STL ball centers, the ground truth for Task 6 on the vertebra).
+* `run_task5_drr.py`: runs the sphere phase first, then the vertebra phase. Sphere DRRs for both poses (2000 × 2000) → `outputs/drr_sphere_{A,B}.npy`, `task5_drr_sphere.png`. Vertebra phase: splits the STL into bone and its own 2 mm balls, renders both poses → `outputs/drr_vertebra_{A,B}.npy`, `task5_drr_vertebra.png`, and `markers_stl_projected.npz` (true projections of the STL ball centers, the ground truth for Task 6 on the vertebra).
 * `tests/test_task5_drr.py`: chord lengths, pixel middles, sphere-only pixels against hand-computed intensities, marker contrast ≈ 0.10 at each ball (predicted 0.09–0.13), images equal away from the markers.
 * `tests/test_task5_vertebra.py`: the STL splits into 3 balls and a bone with positive volume, ball volumes ≈ 4.15 mm³, ball centers within 0.5 mm of the table, entry/exit balance 0 for every pixel, fast ray test equals a brute-force sorted pairing on 300 rays, ball chords ≈ 2 mm with matching intensities.
 * `run_task6_localize.py`: localizes the markers in all four DRRs → `outputs/markers_localized_task6.npz` (keys `<sphere|vertebra>_<A|B>_px` and `_uv_mm`), `task6_localization.png`.
