@@ -38,17 +38,24 @@ def pixel_centers_CK(pose, pixel_mm, rows):
     """
     n = n_pixels(pixel_mm)
     half = config.DETECTOR_SIZE_mm / 2
-    u = (np.arange(n) + 0.5) * pixel_mm - half
-    v = (np.asarray(rows) + 0.5) * pixel_mm - half
+    u = (np.arange(n) + 0.5) * pixel_mm - half                 # u of every column: 0.5, 1.5, 2.5, ... pixels, in mm from the detector center
+    v = (np.asarray(rows) + 0.5) * pixel_mm - half             # v of every requested row, the same way
+    # meshgrid builds two tables: U repeats the u values on every row, V repeats each row's v across the columns,
+    # so (U[j, k], V[j, k]) is the middle of pixel (k, j)
     U, V = np.meshgrid(u, v)                                   # shape (len(rows), n): [row j, column k]
+    # glue U, V and w = 0 together as three coordinates, then flatten the grid into one long list of points
+    # (reshape(-1, 3): "as many rows as needed, 3 values each")
     Td_Det = np.stack([U, V, np.zeros_like(U)], axis=-1).reshape(-1, 3)
+    # move every point from detector coordinates to CK coordinates, then fold the list back into a grid
     return apply_transform(frames.F_CK_from_Det(pose), Td_Det).reshape(len(rows), n, 3)
 
 
 def check_markers_inside_sphere(marker_centers_CK):
     """The 'replacement' formula needs every ball completely inside the sphere."""
+    # norm(..., axis=1) = the length of every marker's position vector, i.e. its distance from the sphere center;
+    # adding the ball radius gives how far the ball's outer side reaches
     reach = np.linalg.norm(marker_centers_CK, axis=1) + MARKER_DIAMETER_mm / 2
-    if np.any(reach >= config.SPHERE_RADIUS_mm):
+    if np.any(reach >= config.SPHERE_RADIUS_mm):                # np.any: True if at least one ball reaches out
         raise ValueError(f"a marker ball sticks out of the sphere (reach {reach} mm)")
 
 
@@ -64,14 +71,16 @@ def render_sphere_drr(pose, pixel_mm, marker_centers_CK, with_markers=True, chun
     r_ball = MARKER_DIAMETER_mm / 2
     img = np.zeros((n, n))
     for r0 in range(0, n, chunk_rows):
-        rows = np.arange(r0, min(n, r0 + chunk_rows))
-        P = pixel_centers_CK(pose, pixel_mm, rows).reshape(-1, 3)    # one target point per pixel
-        d = P - S
+        rows = np.arange(r0, min(n, r0 + chunk_rows))           # row numbers of this chunk (the last chunk may be shorter)
+        P = pixel_centers_CK(pose, pixel_mm, rows).reshape(-1, 3)    # one target point per pixel (grid flattened to a list)
+        d = P - S                                               # S is one point, P a list: S is subtracted from every point
+        # divide every direction by its own length so that it has length 1 (keepdims keeps the lengths as a
+        # column so that the division goes row by row)
         d /= np.linalg.norm(d, axis=1, keepdims=True)                          # unit direction S -> pixel
         # the chord (length of the ray inside a sphere) is the d_i of the slides' sum; we need it for the
         # sphere and for every ball, and it has an exact closed form (geometry.line_sphere_chord)
         l_sphere = line_sphere_chord(S, d, np.zeros(3), config.SPHERE_RADIUS_mm)   # mm
-        l_balls = np.zeros_like(l_sphere)
+        l_balls = np.zeros_like(l_sphere)                      # zeros, same size as l_sphere: total ball path per ray
         if with_markers:
             for M in marker_centers_CK:
                 l_balls += line_sphere_chord(S, d, M, r_ball)                  # balls are disjoint
@@ -79,7 +88,7 @@ def render_sphere_drr(pose, pixel_mm, marker_centers_CK, with_markers=True, chun
         # the sphere chord (density 0.25) and counted with the steel density instead
         sum_dx = (config.SPHERE_DENSITY_g_cm3 * (l_sphere - l_balls)
                   + config.STEEL_DENSITY_g_cm3 * l_balls) / 10.0               # mm -> cm
-        img[rows] = sum_dx.reshape(len(rows), n)
+        img[rows] = sum_dx.reshape(len(rows), n)               # fold the list back into rows x columns and store it in those rows
     return img
 
 
@@ -112,36 +121,52 @@ def mesh_path_length(triangles_CK, pose, pixel_mm):
     S = frames.detector_geometry(pose)["S_CK"]
     n = n_pixels(pixel_mm)
     D = pixel_centers_CK(pose, pixel_mm, np.arange(n)) - S    # (n, n, 3): S -> pixel middle
-    D /= np.linalg.norm(D, axis=-1, keepdims=True)
+    D /= np.linalg.norm(D, axis=-1, keepdims=True)             # make every direction length 1 (axis=-1: the 3 coordinates)
 
-    tri = np.asarray(triangles_CK, float)
+    tri = np.asarray(triangles_CK, float)                      # tri[i] = the 3 corners of triangle i
+    # for ALL triangles at once: v0 = first corner, e1 / e2 = the two edge vectors leaving that corner
     v0, e1, e2 = tri[:, 0], tri[:, 1] - tri[:, 0], tri[:, 2] - tri[:, 0]
-    s = S - v0
+    s = S - v0                                                 # vector from every triangle's first corner to the source
     # everything that depends only on the triangle (not on the ray) is computed once per triangle;
     # a ray only enters through a dot product with the vectors in G
+    # np.cross takes the cross product of each pair of rows; stacking gives, for every triangle, a 3x3 table
     G = np.stack([np.cross(e2, e1), np.cross(e2, s), np.cross(s, e1)], axis=2)   # (N, 3, 3): columns g_a, g_u, g_v/q
+    # np.einsum("ij,ij->i", ...): for every triangle i, multiply e2 and G's third column coordinate by
+    # coordinate and add up (a dot product, done for all triangles without a loop)
     t_num = np.einsum("ij,ij->i", e2, G[:, :, 2])                                # e2 . (s x e1)
 
     # a triangle can only be hit by rays whose pixel lies inside the projection of its corners, so we find
     # that pixel box first; this turns 76 426 triangles x 4 million rays into many small loops
     half = config.DETECTOR_SIZE_mm / 2
     pix = (project_to_detector(tri.reshape(-1, 3), pose) + half) / pixel_mm      # projected corners in pixel units
-    pix = pix.reshape(-1, 3, 2)
+    pix = pix.reshape(-1, 3, 2)                                  # back to: triangle, corner (3), (column, row)
+    # for every triangle: smallest / largest column and row among its 3 corners (min/max over the corners),
+    # rounded down to whole pixels, widened by 1 pixel for safety, and clipped (np.clip) to 0 ... n-1
+    # so the box never leaves the image
     k0 = np.clip(np.floor(pix[:, :, 0].min(axis=1)).astype(int) - 1, 0, n - 1)
     k1 = np.clip(np.floor(pix[:, :, 0].max(axis=1)).astype(int) + 1, 0, n - 1)
     j0 = np.clip(np.floor(pix[:, :, 1].min(axis=1)).astype(int) - 1, 0, n - 1)
     j1 = np.clip(np.floor(pix[:, :, 1].max(axis=1)).astype(int) + 1, 0, n - 1)
+    # True for triangles whose projection lies completely beside the detector (no ray can hit them)
     outside = ((pix[:, :, 0].max(axis=1) < 0) | (pix[:, :, 0].min(axis=1) > n)
                | (pix[:, :, 1].max(axis=1) < 0) | (pix[:, :, 1].min(axis=1) > n))
 
     length = np.zeros((n, n))
     balance = np.zeros((n, n), dtype=int)       # entries minus exits per ray: a consistency check
+    # ~outside = "not outside"; flatnonzero gives the numbers of the triangles that are still in play
     for i in np.flatnonzero(~outside):
-        d = D[j0[i]:j1[i] + 1, k0[i]:k1[i] + 1]
+        d = D[j0[i]:j1[i] + 1, k0[i]:k1[i] + 1]                 # directions of only the rays in this triangle's pixel box
+        # d @ G[i] = dot product of every ray direction with the three vectors of this triangle;
+        # moveaxis then splits the 3 results into three tables A, B, C (one value per ray)
         A, B, C = np.moveaxis(d @ G[i], -1, 0)                  # a, d.(e2 x s), d.(s x e1)
+        # A can be 0 for a ray parallel to the triangle; dividing then gives inf / nan, which is fine
+        # because those rays are thrown out by the "hit" test below, so we silence the warning
         with np.errstate(divide="ignore", invalid="ignore"):
             u, v, t = B / A, C / A, t_num[i] / A
+        # True / False table over the box: ray not parallel, and its hit point is inside the triangle
+        # (u, v >= 0 and u + v <= 1) and in front of the source (t > 0). "&" means "and", pixel by pixel
         hit = (np.abs(A) > 1e-14) & (u >= 0) & (v >= 0) & (u + v <= 1) & (t > 0)
+        # +1 where the ray leaves the object, -1 where it enters, 0 where it misses
         sign = np.where(hit, -np.sign(A), 0.0)                  # +1 exit, -1 entry
         length[j0[i]:j1[i] + 1, k0[i]:k1[i] + 1] += sign * np.where(hit, t, 0.0)
         balance[j0[i]:j1[i] + 1, k0[i]:k1[i] + 1] += sign.astype(int)
@@ -156,7 +181,7 @@ def render_vertebra_drr(pose, pixel_mm, bone_triangles_CK, ball_triangles_CK_lis
     Returns (DRR, info) where info holds the path lengths and the entry/exit balance.
     """
     l_bone, bal_bone = mesh_path_length(bone_triangles_CK, pose, pixel_mm)   # d for the bone surface
-    l_balls = np.zeros_like(l_bone)                                          # d for the three STL balls
+    l_balls = np.zeros_like(l_bone)                  # d for the three STL balls (zeros, same size as l_bone; the balls are added in)
     bal_balls = np.zeros_like(bal_bone)
     for tri in ball_triangles_CK_list:
         l, b = mesh_path_length(tri, pose, pixel_mm)

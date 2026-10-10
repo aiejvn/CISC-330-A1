@@ -7,24 +7,25 @@ detector B are images of the same marker. There are N! ways to pair the points o
 with the points of B ("pairing" = permutation `perm`: point i on A goes with point
 perm[i] on B). Both methods try every pairing, so they work for any (small) N.
 
-Method 1, residual error (REM). Reconstruct every pair of a pairing with
+Method 1, epipolar lines. The two X-ray sources S_A and S_B and one marker M span a
+plane, and the images of M on both detectors lie in this plane (they are where the
+plane cuts the detectors: the epipolar lines). All such planes contain the line
+S_A S_B (the baseline), so a plane is described by one number: how far it is turned
+around the baseline (its tilt, in degrees). Every point on a detector has a tilt (the
+tilt of the plane through the baseline and its ray). Two points are images of the same
+marker only if their tilts are equal. Cost of a pairing = sum of the N tilt
+differences (degrees). The pairing with the smallest cost wins. This needs no 3-D
+reconstruction and no knowledge of the markers.
+
+Method 2, residual error (REM). Reconstruct every pair of a pairing with
 reconstruct.reconstruct_point. Two rays that really come from one marker meet
 (REM ~ 0); rays from two different markers usually pass each other by many mm.
-Cost of a pairing = sum of the N REMs. The pairing with the smallest cost wins.
+Cost of a pairing = sum of the N REMs (mm). The pairing with the smallest cost wins.
 
-Method 2, rigid fit of the marker model. The markers are fixed on a rigid vertebra,
-so the reconstructed points of the right pairing must be the marker table moved by a
-rotation and a translation. For every pairing we reconstruct the N points, fit the
-marker table to them (Kabsch/SVD, proper rotation only) for every naming of the points
-and take the RMS residual (fiducial registration error, mm). Cost of a pairing = the
-smallest residual over the namings. The pairing with the smallest cost wins, and the
-best naming tells which marker is which. This uses the whole shape of the marker set,
-not only some of its distances, so it does not depend on this particular arrangement.
-If the markers are symmetric (e.g. equidistant), the pairing is still found but several
-namings fit equally well: `label_cost` shows this.
-
-Both methods can fail only when a wrong pairing also has near-zero REM
-(the ambiguity of Task 9: markers in one plane through S_A and S_B), so
+The markers are identical spheres, so nothing in the images tells them apart, and
+neither method names M1, M2, M3: they only give the pairing.
+Both methods can fail only when a wrong pairing also fits (the ambiguity of Task 9:
+markers in one plane through S_A and S_B, which then have the same tilt), so
 `correspond` also returns the margin second-best cost / best cost.
 
 AI use: written with help from Claude (Anthropic), Oct 2026; reviewed and
@@ -32,14 +33,14 @@ tested by the group.
 """
 import itertools
 import numpy as np
-import config
-from reconstruct import reconstruct_point
+import frames
+from reconstruct import reconstruct_point, back_projection_line
 
 PERMUTATIONS = list(itertools.permutations(range(3)))     # 6 pairings of 3 markers
 
 
 def permutations_of(n):
-    """All n! pairings (or namings) of n markers; for n = 3 this is PERMUTATIONS."""
+    """All n! pairings of n markers; for n = 3 this is PERMUTATIONS."""
     return PERMUTATIONS if n == 3 else list(itertools.permutations(range(n)))
 
 
@@ -50,48 +51,45 @@ def reconstruct_pairing(uv_A, uv_B, perm):
     return np.array([r[0] for r in results]), np.array([r[1] for r in results])
 
 
+def plane_tilt_deg(uv, pose):
+    """
+    Tilt (0 to 180 degrees) of the plane through the baseline S_A S_B and the ray of the
+    point `uv` (mm) on the detector of `pose`. Points that belong to the same marker have the same tilt.
+    """
+    baseline = frames.detector_geometry("B")["S_CK"] - frames.detector_geometry("A")["S_CK"]
+    b = baseline / np.linalg.norm(baseline)
+    # two directions e1, e2 that are perpendicular to the baseline and to each other: they span the
+    # flat cross-section "looking along the baseline", in which a plane through the baseline is a line
+    z = np.array([0.0, 0.0, 1.0])                     # any direction that is not along the baseline
+    e2 = z - (z @ b) * b                              # z with its baseline part removed
+    e2 /= np.linalg.norm(e2)
+    e1 = np.cross(b, e2)
+    _, to_source = back_projection_line(uv, pose)     # the ray of the point (pointing at the source)
+    # the angle of the ray in that cross-section is the tilt; a plane has no front or back, so mod 180
+    return float(np.degrees(np.arctan2(to_source @ e2, to_source @ e1)) % 180.0)
+
+
+def match_by_epipolar(uv_A, uv_B):
+    """
+    Method 1. Returns dict: perm (best pairing), cost (N!,) sum of tilt differences (degrees) per pairing in
+    permutations_of(N) order, tilt_A / tilt_B (N,) the tilt of every point on A / B.
+    """
+    tilt_A = np.array([plane_tilt_deg(p, "A") for p in uv_A])
+    tilt_B = np.array([plane_tilt_deg(p, "B") for p in uv_B])
+    perms = permutations_of(len(uv_A))
+    # difference of two tilts; 0 and 180 degrees are the same plane, so the largest difference is 90
+    gap = lambda a, b: abs((a - b + 90.0) % 180.0 - 90.0)
+    cost = np.array([sum(gap(tilt_A[i], tilt_B[p[i]]) for i in range(len(p))) for p in perms])
+    return {"perm": perms[int(cost.argmin())], "cost": cost, "tilt_A": tilt_A, "tilt_B": tilt_B}
+
+
 def match_by_rem(uv_A, uv_B):
-    """Method 1. Returns dict: perm (best pairing), cost (N!,) sum of REM per pairing in permutations_of(N) order."""
+    """Method 2. Returns dict: perm (best pairing), cost (N!,) sum of REM per pairing in permutations_of(N) order."""
     # lines from the same marker meet (REM ~ 0), lines from different markers miss by several mm,
     # so the right pairing is the one with the smallest total miss distance
     perms = permutations_of(len(uv_A))
     cost = np.array([reconstruct_pairing(uv_A, uv_B, p)[1].sum() for p in perms])
     return {"perm": perms[int(cost.argmin())], "cost": cost}
-
-
-def rigid_fit_error(model, points):
-    """
-    RMS residual (mm) after the best proper rigid motion (rotation + translation) of `model`
-    (N, 3) onto `points` (N, 3): Kabsch with the SVD of the covariance of the centered sets.
-    """
-    P, Q = model - model.mean(axis=0), points - points.mean(axis=0)    # centering removes the translation
-    U, _, Vt = np.linalg.svd(P.T @ Q)                                  # the SVD of the covariance gives the best rotation
-    # without the sign correction the SVD can return a mirror image (det = -1), which a rigid body never is
-    D = np.diag([1.0, 1.0, np.sign(np.linalg.det(Vt.T @ U.T))])      # det = +1: no mirror image
-    R = Vt.T @ D @ U.T
-    return float(np.sqrt(np.mean(np.sum((P @ R.T - Q) ** 2, axis=1))))
-
-
-def match_by_fit(uv_A, uv_B, model_mm=None):
-    """
-    Method 2. `model_mm` (N, 3) is the known marker set (default: the assignment's marker table).
-    Returns dict: perm (best pairing), labels (labels[i] = marker index of the reconstructed point i
-    of the best pairing), cost (N!,) per pairing in permutations_of(N) order, label_cost (N!,) the
-    fit error of every naming for the best pairing (several near 0 = symmetric markers).
-    """
-    model = np.asarray(config.MARKERS_MD_mm if model_mm is None else model_mm, float)
-    perms = permutations_of(len(model))
-    cost, label_costs = [], []
-    for p in perms:
-        M, _ = reconstruct_pairing(uv_A, uv_B, p)      # the points this pairing would give
-        # which point is M1, M2, M3 is also unknown, so try every naming and keep the best fit; the costs
-        # of all namings are kept: several near 0 means a symmetric marker set (no unique naming)
-        per_label = np.array([rigid_fit_error(model[list(l)], M) for l in perms])
-        cost.append(per_label.min())
-        label_costs.append(per_label)
-    k = int(np.argmin(cost))
-    return {"perm": perms[k], "labels": perms[int(np.argmin(label_costs[k]))],
-            "cost": np.array(cost), "label_cost": label_costs[k]}
 
 
 def margin(cost):
@@ -100,15 +98,14 @@ def margin(cost):
     return s[1] / max(s[0], 1e-12)
 
 
-def correspond(uv_A, uv_B, model_mm=None):
+def correspond(uv_A, uv_B):
     """
     Run both methods on the N unordered points of each detector ((N, 2) mm arrays).
-    Returns dict: rem / fit (the two method results), agree (same pairing?), perm (the
+    Returns dict: epipolar / rem (the two method results), agree (same pairing?), perm (the
     pairing to use = method 1), markers_CK (N, 3) reconstructed with it, REM (N,).
     """
     uv_A, uv_B = np.asarray(uv_A, float), np.asarray(uv_B, float)
-    r1, r2 = match_by_rem(uv_A, uv_B), match_by_fit(uv_A, uv_B, model_mm)   # two independent kinds of knowledge
-    # method 1 is used for the reconstruction (larger margin); method 2 is the check and gives the names
+    r1, r2 = match_by_epipolar(uv_A, uv_B), match_by_rem(uv_A, uv_B)   # two ways to test "do these two rays meet"
     M, rem = reconstruct_pairing(uv_A, uv_B, r1["perm"])
-    return {"rem": r1, "fit": r2, "agree": r1["perm"] == r2["perm"],
+    return {"epipolar": r1, "rem": r2, "agree": r1["perm"] == r2["perm"],
             "perm": r1["perm"], "markers_CK": M, "REM": rem}

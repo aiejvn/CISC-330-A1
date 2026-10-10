@@ -15,7 +15,7 @@ it, and what is left to do.
 | 5 | Digitally Reconstructed Radiograph (DRR) | done, tested (sphere phase: 3 mm balls at the table positions; vertebra phase: the STL's own 2 mm balls) | `drr.py`, `run_task5_drr.py`, `tests/test_task5_drr.py`, `tests/test_task5_vertebra.py` |
 | 6 | Marker Localization | done, tested (sphere and vertebra DRRs, both poses) | `localize.py`, `run_task6_localize.py`, `tests/test_task6_localization.py` |
 | 7 | Marker Reconstruction + REM | done, tested | `reconstruct.py`, `tests/test_task7_reconstruction.py` |
-| 8 | Marker Correspondences | done, tested (2 methods: REM and rigid fit of the marker model) | `correspondence.py`, `tests/test_task8_correspondence.py` |
+| 8 | Marker Correspondences | done, tested (2 methods: epipolar tilt and REM) | `correspondence.py`, `tests/test_task8_correspondence.py` |
 | 9 | Marker Ambiguity | **to do** | new file, e.g. `ambiguity.py` |
 | 10 | Marker Reconstruction Error Analysis | **to do** | new file, e.g. `error_analysis.py` |
 
@@ -184,10 +184,11 @@ nothing about M1, M2, M3. `centroid_px` is the result later tasks use.
 A pairing is a permutation `perm`: point i on A goes with point `perm[i]` on B (N! in total, 6 for 3 markers).
 | function | returns | how |
 |---|---|---|
-| `match_by_rem(uv_A, uv_B)` | dict `perm`, `cost` | method 1: reconstruct all three pairs; cost = sum of the 3 REMs; smallest wins |
-| `match_by_fit(uv_A, uv_B, model_mm)` | dict `perm`, `labels`, `cost`, `label_cost` | method 2: reconstruct the markers of a pairing and fit the known marker set to them (Kabsch/SVD, proper rotation + translation); cost = RMS residual of the best naming; smallest cost wins. `labels` says which point is M1, M2, M3; `label_cost` shows if several namings fit equally well (symmetric markers). Works for any N. |
+| `plane_tilt_deg(uv, pose)` | degrees | tilt of the plane through the baseline S_A S_B and the ray of a point; the same marker has the same tilt on both detectors |
+| `match_by_epipolar(uv_A, uv_B)` | dict `perm`, `cost`, `tilt_A`, `tilt_B` | method 1: cost of a pairing = sum of the 3 tilt differences (degrees); smallest wins. No 3-D reconstruction, no marker table. |
+| `match_by_rem(uv_A, uv_B)` | dict `perm`, `cost` | method 2: reconstruct all three pairs; cost = sum of the 3 REMs (mm); smallest wins |
 | `margin(cost)` | float | second-best / best cost; near 1 means ambiguous (the Task 9 situation) |
-| `correspond(uv_A, uv_B, model_mm)` | dict | runs both methods, reports whether they `agree`, and returns the markers (CK) and REM of the method 1 pairing |
+| `correspond(uv_A, uv_B)` | dict `epipolar`, `rem`, `agree`, `perm`, `markers_CK`, `REM` | runs both methods, reports whether they `agree`, and returns the markers (CK) and REM of the method 1 pairing. The markers are identical, so the points are not named M1, M2, M3. |
 
 ### Runners and tests
 * `run_task2_markers.py`: saves the markers (above) and draws
@@ -263,11 +264,12 @@ uv_A, uv_B = proj["DetA_uv_mm"], proj["DetB_uv_mm"]               # (3, 2) each
   background uneven; the plane fit and the four-sided score handle this.
 
 **Task 8 (Marker Correspondences) – done**
-* Method 1 (smallest sum of REM) and method 2 (rigid fit of the marker model,
-  works for any number of markers) both find the true pairing for all six
-  orderings of the points on detector B.
-* For the true pairing REM is ≈ 0. The best wrong pairing costs 15.83 mm in
-  summed REM and 1.98 mm in fit error, far above the correct one.
+* Method 1 (epipolar lines: the same marker has the same tilt of the plane through
+  both sources) and method 2 (smallest sum of REM) both find the true pairing for
+  all six orderings of the points on detector B, and for equidistant and for four
+  markers. They only find the pairing; the markers are not named.
+* For the true pairing REM is ≈ 0. The best wrong pairing costs 1.23 degrees in
+  summed tilt difference and 15.83 mm in summed REM, far above the correct one.
 * With the localized points of Task 6 both methods still agree: sphere REM below
   0.005 mm, vertebra REM below 0.005 mm, and every marker is reconstructed within
   0.04 mm of the true position. The localized points are unordered, so this uses

@@ -192,8 +192,25 @@ def fig_task6_errors():
 def fig_task8():
     proj = load("markers_projected_task4.npz")
     A, B = proj["DetA_uv_mm"], proj["DetB_uv_mm"]
-    fig = plt.figure(figsize=(15, 4.8))
-    ax = fig.add_subplot(1, 3, 1)
+    fig = plt.figure(figsize=(20, 4.8))
+    r = correspond(A, B)
+    tx = fig.add_subplot(1, 4, 1)                      # (a) method 1: the tilt of the plane of every point
+    wrap = lambda t: np.where(t > 90, t - 180, t)      # 179.5 degrees is the same plane as -0.5 degrees
+    tA, tB = wrap(r["epipolar"]["tilt_A"]), wrap(r["epipolar"]["tilt_B"])
+    cols3 = ["#1b9e77", "#d95f02", "#7570b3"]
+    for i in range(3):
+        tx.plot([tA[i], tB[i]], [1, 0], "-", color=cols3[i], lw=1, zorder=1)
+        tx.plot(tA[i], 1, "o", color=cols3[i], ms=10, zorder=3)
+        tx.plot(tB[i], 0, "o", color=cols3[i], ms=10, zorder=3)
+        tx.text(tA[i], 1.12, f"A$_{i + 1}$", ha="center", color=cols3[i])
+        tx.text(tB[i], -0.2, f"B$_{i + 1}$", ha="center", color=cols3[i])
+    tx.set_yticks([0, 1]); tx.set_yticklabels(["detector B", "detector A"])
+    tx.set_ylim(-0.45, 1.45)
+    tx.set_xlabel("tilt of the plane through $S_A$, $S_B$ and the point (degrees)")
+    tx.set_title("(a) method 1: the tilt of every point;\nthe same marker has the same tilt")
+    for s_ in ("top", "right"):
+        tx.spines[s_].set_visible(False)
+    ax = fig.add_subplot(1, 4, 2)
     rem = np.zeros((3, 3))
     for i in range(3):
         for j in range(3):
@@ -211,10 +228,10 @@ def fig_task8():
     ax.text(SB[0], SB[1] + 40, "$S_B$", color=CB, ha="center")
     ax.set_xlim(-150, 150); ax.set_ylim(-150, 150)
     ax.set_aspect("equal")
-    ax.set_title("(a) top view of the 6 back-projection lines:\nthe 9 crossings (green true, red false pairing)")
+    ax.set_title("(b) method 2: top view of the 6 lines;\nthe 9 crossings (green true, red false pairing)")
     ax.set_xlabel("$x_{CK}$ (mm)"); ax.set_ylabel("$y_{CK}$ (mm)")
     ax.invert_xaxis()
-    bx = fig.add_subplot(1, 3, 2)
+    bx = fig.add_subplot(1, 4, 3)
     im = bx.imshow(rem, cmap="Reds", vmin=0, vmax=20)
     for i in range(3):
         for j in range(3):
@@ -222,23 +239,26 @@ def fig_task8():
                     fontweight="bold" if i == j else "normal")
     bx.set_xticks(range(3)); bx.set_yticks(range(3))
     bx.set_xticklabels(["B$_1$", "B$_2$", "B$_3$"]); bx.set_yticklabels(["A$_1$", "A$_2$", "A$_3$"])
-    bx.set_title("(b) REM (mm) of every pair of points\n(A point $i$, B point $j$)")
+    bx.set_title("(c) method 2: REM (mm) of every\npair (A point $i$, B point $j$)")
     for s in bx.spines.values():
         s.set_visible(False)
-    cx = fig.add_subplot(1, 3, 3)
-    r = correspond(A, B)
-    c1, c2 = r["rem"]["cost"], r["fit"]["cost"]
+    cx = fig.add_subplot(1, 4, 4)
+    c1, c2 = r["epipolar"]["cost"], r["rem"]["cost"]
     x = np.arange(6); w = .38
-    cx.bar(x - w / 2, np.maximum(c1, 1e-3), w, color=CA, label="method 1: sum of REM")
-    cx.bar(x + w / 2, np.maximum(c2, 1e-3), w, color=CB, label="method 2: rigid-fit error")
+    cx.bar(x - w / 2, np.maximum(c1, 1e-3), w, color=CA, label="method 1: sum of tilt differences (deg, left axis)")
     cx.set_yscale("log"); cx.set_ylim(1e-3, 300)
+    cx.set_ylabel("method 1 (deg, log)")
+    cx2 = cx.twinx()                                   # a second axis: method 2 is in mm, not degrees
+    cx2.bar(x + w / 2, np.maximum(c2, 1e-3), w, color=CB, label="method 2: sum of REM (mm, right axis)")
+    cx2.set_yscale("log"); cx2.set_ylim(1e-3, 300)
+    cx2.set_ylabel("method 2 (mm, log)")
     cx.text(0, 2e-3, r"$\approx 10^{-13}$", ha="center", fontsize=8)
     cx.set_xticks(x); cx.set_xticklabels(["".join(str(q + 1) for q in p) for p in PERMUTATIONS], fontsize=9)
     cx.set_xlabel("pairing: B points matched with A points 1, 2, 3")
-    cx.set_ylabel("cost (mm, log, floor $10^{-3}$)")
-    cx.legend(frameon=False, fontsize=8, loc="upper left")
+    h1, l1 = cx.get_legend_handles_labels(); h2, l2 = cx2.get_legend_handles_labels()
+    cx.legend(h1 + h2, l1 + l2, frameon=False, fontsize=8, loc="upper left")
     cx.grid(axis="y", alpha=.25)
-    cx.set_title("(c) cost of all $3!=6$ pairings\n(true projections, B in true order)")
+    cx.set_title("(d) cost of all $3!=6$ pairings\n(true projections, B in true order)")
     fig.tight_layout(); fig.savefig(os.path.join(OUT, "task8_pairings.png"), dpi=150); plt.close(fig)
     return rem, c1, c2
 
@@ -269,7 +289,7 @@ if __name__ == "__main__":
     for k, v in err.items():
         print(k, np.round(v, 4))
     rem, c1, c2 = fig_task8()
-    print("REM matrix\n", np.round(rem, 2)); print("cost1", np.round(c1, 3)); print("cost2", np.round(c2, 3))
+    print("REM matrix\n", np.round(rem, 2)); print("cost1 (deg)", np.round(c1, 3)); print("cost2 (mm)", np.round(c2, 3))
     r = fig_task8_matched()
-    print(r["perm"], r["fit"]["labels"], np.round(r["REM"], 4))
+    print(r["perm"], np.round(r["REM"], 4))
     print("figures written to", OUT)
