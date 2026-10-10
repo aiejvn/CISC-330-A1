@@ -48,9 +48,9 @@ OFFSET_PX = 45       # distance (4.5 mm) of the four comparison boxes
 MIN_SEPARATION_PX = 80   # two markers are never closer than 8 mm on a detector (suppression radius)
 WINDOW_HALF_PX = 40  # refinement window is 81 x 81 pixels (8.1 mm). A shadow of a 3 mm ball is about 60 px wide (2 x 3 mm
                      # magnified by 2) and its half-max width about 52 px, so the window needs the shadow plus a free
-                     # 7 px frame: at 71 px the frame touches the shadow; the larger the window, the less a plane fits the
-                     # curved bone (vertebra worst error 1.25 px at 81 px, 1.5 px at 91 px, 1.7 px at 101 px, 2.4 px at
-                     # 121 px; the sphere phase stays at 0.05 px). Measured against the true centers, Task 5/6.
+                     # 7 px frame: at 61 px the frame lies on the shadow (worst error 0.9 px on the vertebra); the larger the window, the
+                     # less a plane fits the curved bone (vertebra worst error 0.31 px at 81 px, 0.38 px at 91 px, 0.42 px at
+                     # 101 px, 0.55 px at 121 px; the sphere phase stays at 0.05 px). Measured against the true centers, Task 5/6.
 BORDER_PX = 7        # width of the frame of the window used for the background plane
 
 

@@ -1,0 +1,14 @@
+sphere   A: visual (884.0,315.0)  algorithm (883.82,315.14)  true (883.78,315.17)  visual-true 0.28 px (0.03 mm)  algorithm-true 0.04 px (0.004 mm)
+sphere   A: visual (1040.0,178.0)  algorithm (1040.83,177.04)  true (1040.84,177.02)  visual-true 1.29 px (0.13 mm)  algorithm-true 0.02 px (0.002 mm)
+sphere   A: visual (1213.0,877.0)  algorithm (1212.95,876.85)  true (1212.92,876.81)  visual-true 0.20 px (0.02 mm)  algorithm-true 0.05 px (0.005 mm)
+sphere   B: visual (885.0,1628.0)  algorithm (884.10,1628.28)  true (884.10,1628.32)  visual-true 0.96 px (0.10 mm)  algorithm-true 0.05 px (0.005 mm)
+sphere   B: visual (1039.0,606.0)  algorithm (1038.45,605.78)  true (1038.45,605.77)  visual-true 0.60 px (0.06 mm)  algorithm-true 0.01 px (0.001 mm)
+sphere   B: visual (1220.0,1660.0)  algorithm (1218.56,1660.49)  true (1218.61,1660.48)  visual-true 1.47 px (0.15 mm)  algorithm-true 0.05 px (0.005 mm)
+vertebra A: visual (885.0,310.0)  algorithm (884.87,309.24)  true (884.90,309.04)  visual-true 0.96 px (0.10 mm)  algorithm-true 0.20 px (0.020 mm)
+vertebra A: visual (1040.0,181.0)  algorithm (1040.55,180.84)  true (1040.53,180.68)  visual-true 0.62 px (0.06 mm)  algorithm-true 0.17 px (0.017 mm)
+vertebra A: visual (1217.0,883.0)  algorithm (1217.05,882.91)  true (1216.94,882.79)  visual-true 0.22 px (0.02 mm)  algorithm-true 0.16 px (0.016 mm)
+vertebra B: visual (886.0,1625.0)  algorithm (885.25,1625.04)  true (885.27,1624.98)  visual-true 0.74 px (0.07 mm)  algorithm-true 0.07 px (0.007 mm)
+vertebra B: visual (1038.0,601.0)  algorithm (1038.13,600.62)  true (1038.16,600.31)  visual-true 0.71 px (0.07 mm)  algorithm-true 0.31 px (0.031 mm)
+vertebra B: visual (1222.0,1665.0)  algorithm (1222.78,1665.10)  true (1222.85,1665.41)  visual-true 0.94 px (0.09 mm)  algorithm-true 0.31 px (0.031 mm)
+
+largest visual-vs-true distance: 1.47 px = 0.15 mm

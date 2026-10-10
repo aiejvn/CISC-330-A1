@@ -58,7 +58,7 @@ SPHERE_RADIUS_mm = 50.0
 SPHERE_DENSITY_g_cm3 = 0.25
 STEEL_DENSITY_g_cm3 = 7.85      # assumed (typical steel)
 ATTENUATION_K_cm2_g = 1.0       # assumed; I = I0 exp(-k sum(d x)), d in cm, x in g/cm^3
-BONE_DENSITY_g_cm3 = 1.0        # assumed (vertebra phase; not given in the assignment)
+BONE_DENSITY_g_cm3 = 0.25       # vertebra model density from the assignment (same as the sphere)
 
 # ---- How the vertebra model sits in the CK frame -------------------------------
 # The centers of the MD and CK frames coincide and their base vectors are

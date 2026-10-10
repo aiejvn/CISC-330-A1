@@ -10,21 +10,21 @@ PASS  pose A: all lengths >= 0  min bone 0.00e+00, min balls 0.00e+00
 PASS  pose A: bone is in the image (max chord 66.9 mm)  
 PASS  pose A: fast == brute force (sorted pairing), 300 rays  worst difference 1.14e-12 mm
 PASS  pose A: M1 ball chord at pixel (k=243, j=176)  2.9946 mm (predicted 2.85 - 3.0)
-PASS  pose A: M1 pixel value formula  sum d x = 5.141365 g/cm^2
+PASS  pose A: M1 pixel value formula  sum d x = 3.048399 g/cm^2
 PASS  pose A: M2 ball chord at pixel (k=208, j=36)  2.9804 mm (predicted 2.85 - 3.0)
-PASS  pose A: M2 pixel value formula  sum d x = 2.544447 g/cm^2
+PASS  pose A: M2 pixel value formula  sum d x = 2.390829 g/cm^2
 PASS  pose A: M3 ball chord at pixel (k=176, j=61)  2.9766 mm (predicted 2.85 - 3.0)
-PASS  pose A: M3 pixel value formula  sum d x = 2.627887 g/cm^2
+PASS  pose A: M3 pixel value formula  sum d x = 2.409469 g/cm^2
 PASS  pose B: entry/exit balance 0 for the bone, every pixel  0 bad pixels
 PASS  pose B: entry/exit balance 0 for the balls, every pixel  0 bad pixels
 PASS  pose B: all lengths >= 0  min bone 0.00e+00, min balls 0.00e+00
 PASS  pose B: bone is in the image (max chord 70.0 mm)  
 PASS  pose B: fast == brute force (sorted pairing), 300 rays  worst difference 1.14e-12 mm
 PASS  pose B: M1 ball chord at pixel (k=244, j=333)  2.9831 mm (predicted 2.85 - 3.0)
-PASS  pose B: M1 pixel value formula  sum d x = 3.007796 g/cm^2
+PASS  pose B: M1 pixel value formula  sum d x = 2.508265 g/cm^2
 PASS  pose B: M2 ball chord at pixel (k=207, j=120)  2.9812 mm (predicted 2.85 - 3.0)
-PASS  pose B: M2 pixel value formula  sum d x = 7.256940 g/cm^2
+PASS  pose B: M2 pixel value formula  sum d x = 3.569411 g/cm^2
 PASS  pose B: M3 ball chord at pixel (k=177, j=324)  2.9747 mm (predicted 2.85 - 3.0)
-PASS  pose B: M3 pixel value formula  sum d x = 2.925400 g/cm^2
+PASS  pose B: M3 pixel value formula  sum d x = 2.482698 g/cm^2
 
 Number of failed checks: 0  ->  ALL CHECKS PASSED

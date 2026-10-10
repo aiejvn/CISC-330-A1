@@ -15,12 +15,12 @@ PASS  B order (2, 1, 0): every wrong pairing costs > 1 degree (method 1) / > 5 m
 PASS  sphere (Task 6 points): both methods find the true pairing (2, 1, 0)  (found (2, 1, 0) / (2, 1, 0))
 PASS  sphere (Task 6 points): REM < 0.05 mm and markers within 0.5 mm  (REM [0.0038 0.0019 0.0004] mm, MRE [0.002 0.003 0.001] mm, best tilt cost 0.0005 degrees)
 PASS  vertebra (Task 6 points): both methods find the true pairing (2, 0, 1)  (found (2, 0, 1) / (2, 0, 1))
-PASS  vertebra (Task 6 points): REM < 0.3 mm and markers within 0.5 mm  (REM [0.0112 0.0093 0.03  ] mm, MRE [0.071 0.044 0.072] mm, best tilt cost 0.0039 degrees)
+PASS  vertebra (Task 6 points): REM < 0.3 mm and markers within 0.5 mm  (REM [0.0023 0.0004 0.0088] mm, MRE [0.018 0.011 0.017] mm, best tilt cost 0.0009 degrees)
 PASS  equidistant markers: both methods find the pairing  
 PASS  4 markers: both methods undo all 24 orders of detector B  
 PASS  table distances all differ by > 5 mm (so the naming is unique)  (M1-M2 64.2, M1-M3 33.6, M2-M3 53.9 mm)
 PASS  true projections, all 36 orders of A and B: labelled_CK is exactly M1, M2, M3  (largest distance mismatch 1.4e-13 mm)
 PASS  sphere (Task 6 points): marker k is named Mk and lies within 0.5 mm of the true Mk  (error [0.002 0.001 0.003] mm, distance mismatch 0.003 mm, second-best naming costs 20.7 mm vs 0.01 mm)
-PASS  vertebra (Task 6 points): marker k is named Mk and lies within 0.5 mm of the true Mk  (error [0.072 0.071 0.044] mm, distance mismatch 0.614 mm, second-best naming costs 21.7 mm vs 1.05 mm)
+PASS  vertebra (Task 6 points): marker k is named Mk and lies within 0.5 mm of the true Mk  (error [0.017 0.018 0.011] mm, distance mismatch 0.617 mm, second-best naming costs 21.7 mm vs 1.17 mm)
 
 Number of failed checks: 0  ->  ALL CHECKS PASSED

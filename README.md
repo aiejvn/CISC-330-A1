@@ -157,7 +157,7 @@ One ray per pixel, from the source S through the middle of the pixel; image
 `img[j, k]` holds the pixel value Σ d_i x_i (g/cm²; d in cm, x in g/cm³) with k = i1 (u direction)
 and j = i2 (v direction), so plot with `origin="lower"`. No intensity or attenuation constant is
 needed. Assumed densities (not given in the assignment, set in `config.py`): steel 7.85 g/cm³,
-bone 1.0 g/cm³. All markers are 3 mm (`drr.MARKER_DIAMETER_mm` = `config.MARKER_DIAMETER_mm`); the STL balls are 2 mm and are enlarged about their centers with `stl_io.enlarge_ball`.
+bone 0.25 g/cm³ (the assignment gives it for the vertebra, and the sphere uses the same). All markers are 3 mm (`drr.MARKER_DIAMETER_mm` = `config.MARKER_DIAMETER_mm`); the STL balls are 2 mm and are enlarged about their centers with `stl_io.enlarge_ball`.
 | function | returns | how |
 |---|---|---|
 | `n_pixels(pixel_mm)` | int | 2000 for 0.1 mm, 200 for 1 mm (coarse test) |
@@ -247,7 +247,7 @@ uv_A, uv_B = proj["DetA_uv_mm"], proj["DetB_uv_mm"]               # (3, 2) each
   own center to 3 mm (`enlarge_ball`). Rays are tested against the triangles with our own
   numpy Moeller-Trumbore code (no external mesh library). Every pixel has
   entry/exit balance 0 and the fast code agrees with a brute-force sorted version.
-* Densities and k are our assumptions (steel 7.85, bone 1.0, k = 1.0); see `config.py`.
+* Densities and k are our assumptions (steel 7.85, k = 1.0; bone 0.25 is from the assignment); see `config.py`.
 * The STL balls are 0.34–0.44 mm from the table positions (their centers are kept when enlarging), so
   the vertebra DRR has its own ground truth, `outputs/markers_stl_projected.npz`
   (0.35–0.72 mm from the table-based Task 4 projections). Task 6 on the vertebra
@@ -258,7 +258,7 @@ uv_A, uv_B = proj["DetA_uv_mm"], proj["DetB_uv_mm"]               # (3, 2) each
   (intensity-weighted) and `area_px` (unweighted shape). The detector coordinates
   come from `F_Det_from_Img()`.
 * Errors against the true projections (all checks in `outputs/task6_localization_tests.txt`):
-  sphere centroid below 0.01 mm; vertebra centroid 0.03–0.12 mm (about 0.3–1.25 px);
+  sphere centroid below 0.01 mm; vertebra centroid 0.007–0.03 mm (about 0.07–0.31 px);
   peak method up to 0.52 mm. Window 81 × 81 px and comparison offset 45 px (retuned for the
   60 px wide shadow of a 3 mm ball). The 4th-best candidate scores far below the weakest
   marker in all four images.
@@ -303,7 +303,7 @@ also accepts a whole stack of 3x3 systems at once.
 * STL marker balls: 2 mm and slightly off the table positions, while the assignment says 3 mm.
   Both DRRs use 3 mm balls; the vertebra DRR scales each STL ball about its own center, so the
   centers stay 0.34–0.44 mm from the table positions.
-* Steel density, bone density and the attenuation constant k are not given; we assume 7.85 g/cm³, 1.0 g/cm³ and 1.0 cm²/g.
+* Steel density and the attenuation constant k are not given; we assume 7.85 g/cm³ and 1.0 cm²/g. Bone density is 0.25 g/cm³ (given in the assignment).
 
 ## Use of AI
 Code written with help from Claude (Anthropic), Sep–Oct 2026, then reviewed and

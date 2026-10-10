@@ -7,7 +7,7 @@ ball centers (outputs/markers_stl_projected.npz).
 
 Why these checks, and what we predict before running:
  1. Exactly 3 candidates stand out: the 4th best detection score is below 0.3 x the weakest
-    marker score (measured while developing: markers 0.67 - 2.0, 4th candidate <= 0.19).
+    marker score (measured while developing: markers 2.0 - 2.2, 4th candidate <= 0.07).
  2. Every true marker has exactly one found marker nearest to it (a one-to-one match), so no
     marker is missed and none is found twice.
  3. Sphere phase, sub-pixel centroid: the shadow of a perfect ball over a smooth background, so
