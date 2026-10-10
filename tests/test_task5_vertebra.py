@@ -1,5 +1,5 @@
 """
-Task 5 test: DRR, vertebra phase (STL model with its own 2 mm marker balls), coarse
+Task 5 test: DRR, vertebra phase (STL model with its own marker balls, 2 mm in the file, enlarged to 3 mm), coarse
 detector (0.5 mm pixels, 400 x 400) so it runs in about a minute.
 
 Why these checks, and what we predict before running:
@@ -7,7 +7,8 @@ Why these checks, and what we predict before running:
     POSITIVE signed volume (outward normals, ~68,585 mm^3); the 3 balls have volume
     ~4.15 mm^3 (a 2 mm sphere is 4.19) and diameter 2; one small piece is an internal
     cavity with NEGATIVE volume. We predict: exactly 3 balls found, matched to M1, M2, M3
-    in table order, each within 0.5 mm of its table position.
+    in table order, each within 0.5 mm of its table position. After enlarging each ball
+    about its center to 3 mm the volume is 4.15 * 1.5^3 = 14.0 mm^3 (a 3 mm sphere: 14.14).
  2. Entry/exit balance: for a closed surface and a ray that starts outside, entries minus
     exits is 0 for EVERY pixel. Any double-counted or missed hit on an edge would break
     this. Predict: balance 0 everywhere, for bone and for each ball, in both poses.
@@ -16,8 +17,8 @@ Why these checks, and what we predict before running:
     the classic method (collect hits, sort by t, pair entry/exit: length = sum(t_exit - t_entry)),
     no bounding boxes, no orientation. Predict: equal to the fast method within 1e-9 mm.
  5. Ball chord: at the pixel containing the projected STL ball centre, the ray passes
-    within ~0.2 mm of the centre of a 2 mm ball whose mesh is inscribed (642 corners),
-    so the chord is slightly under 2 mm: predict 1.9 - 2.0 mm for every ball and pose.
+    within ~0.2 mm of the centre of a 3 mm ball whose mesh is inscribed (642 corners),
+    so the chord is slightly under 3 mm: predict 2.85 - 3.0 mm for every ball and pose.
     (This also catches a transposed image: img[j, k] vs img[k, j].)
  6. Pixel value: at that pixel the DRR = (x_bone l_bone + x_steel l_balls)/10 is reproduced.
 
@@ -30,7 +31,7 @@ import os, sys
 import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import config, frames, drr
-from stl_io import read_binary_stl, split_vertebra_and_markers, signed_volume
+from stl_io import read_binary_stl, split_vertebra_and_markers, signed_volume, enlarge_ball
 from geometry import apply_transform
 from projector import project_to_detector
 
@@ -77,6 +78,10 @@ check("ball volumes ~ 4.15 mm^3 (2 mm sphere)", all(abs(signed_volume(b) - 4.15)
 dist = np.linalg.norm(centers_MD - config.MARKERS_MD_mm, axis=1)
 check("each ball within 0.5 mm of its table position (order M1, M2, M3)", np.all(dist < 0.5), f"{np.round(dist, 3)} mm")
 check("balls + bone cover every triangle", len(bone_MD) + sum(len(b) for b in balls_MD) == len(triangles))
+# the balls of the render: enlarged about their own centers to 3 mm (same as run_task5_drr.py)
+balls_MD = [enlarge_ball(b, c, config.MARKER_DIAMETER_mm) for b, c in zip(balls_MD, centers_MD)]
+check("enlarged ball volumes ~ 14.0 mm^3 (3 mm sphere is 14.14)", all(abs(signed_volume(b) - 14.0) < 0.3 for b in balls_MD),
+      str([round(signed_volume(b), 3) for b in balls_MD]))
 
 bone = to_CK(bone_MD)
 balls = [to_CK(b) for b in balls_MD]
@@ -112,7 +117,7 @@ for pose in ("A", "B"):
     for name, (u, v) in zip(config.MARKER_NAMES, uv):
         k, j = int(np.floor((u + 100) / PIXEL_MM)), int(np.floor((v + 100) / PIXEL_MM))
         chord = info["l_balls"][j, k]
-        check(f"pose {pose}: {name} ball chord at pixel (k={k}, j={j})", 1.9 <= chord <= 2.0, f"{chord:.4f} mm (predicted 1.9 - 2.0)")
+        check(f"pose {pose}: {name} ball chord at pixel (k={k}, j={j})", 2.85 <= chord <= 3.0, f"{chord:.4f} mm (predicted 2.85 - 3.0)")
         expect = (config.BONE_DENSITY_g_cm3 * info["l_bone"][j, k] + config.STEEL_DENSITY_g_cm3 * chord) / 10
         check(f"pose {pose}: {name} pixel value formula", abs(img[j, k] - expect) < 1e-12, f"sum d x = {img[j, k]:.6f} g/cm^2")
 

@@ -87,7 +87,7 @@ def fig_task5_profile():
     ax.set_xlim(-60, 60); ax.set_xlabel("$u$ (mm)"); ax.set_ylabel(r"DRR value $\sum_i d_i x_i$ (g/cm$^2$)")
     ax.set_title(f"(a) one image row ($v={v:.1f}$ mm) through M1 in image A")
     ax.legend(frameon=False, loc="upper left")
-    ax.annotate("ball adds\n$\\approx 7.6\\,l_{\\rm ball}/10\\approx 1.5$", xy=(21.3, a.max()), xytext=(-55, a.max() * 0.62),
+    ax.annotate("ball adds\n$\\approx 7.6\\,l_{\\rm ball}/10\\approx 2.3$", xy=(21.3, a.max()), xytext=(-55, a.max() * 0.62),
                 arrowprops=dict(arrowstyle="->"), fontsize=9)
     # (b) signed path length through a closed surface
     bx.add_patch(plt.Polygon([[1.5, 0.5], [3.7, 0.2], [4.6, 1.4], [3.2, 2.3], [1.6, 1.8]], fc="#dddddd", ec="k"))
@@ -132,7 +132,7 @@ def fig_task6_method():
     ax.text(k0, j0 + 2 * d - 8, "centre box", color=CA, ha="center")
     ax.text(k0 + 2 * d - 5, j0 - d - 8, "4 comparison\nboxes", color="#1565c0", ha="center", va="top", fontsize=8)
     ax.set_xlim(ext[0], ext[1]); ax.set_ylim(ext[2], ext[3])
-    ax.set_title("(b) score = smallest of the four\n(centre box $-$ box 3.5 mm away)")
+    ax.set_title("(b) score = smallest of the four\n(centre box $-$ box 4.5 mm away)")
     ax = axs[2]
     im = ax.imshow(score[sl], origin="lower", cmap="viridis", extent=ext)
     ax.set_title("(c) score map: a ball is a peak,\na bone edge is not")
@@ -207,7 +207,7 @@ def fig_task8():
     tx.set_yticks([0, 1]); tx.set_yticklabels(["detector B", "detector A"])
     tx.set_ylim(-0.45, 1.45)
     tx.set_xlabel("tilt of the plane through $S_A$, $S_B$ and the point (degrees)")
-    tx.set_title("(a) method 1: the tilt of every point;\nthe same marker has the same tilt")
+    tx.set_title("(a) method 1, epipolar lines:\ntilt of every point (same marker, same tilt)")
     for s_ in ("top", "right"):
         tx.spines[s_].set_visible(False)
     ax = fig.add_subplot(1, 4, 2)
@@ -228,7 +228,7 @@ def fig_task8():
     ax.text(SB[0], SB[1] + 40, "$S_B$", color=CB, ha="center")
     ax.set_xlim(-150, 150); ax.set_ylim(-150, 150)
     ax.set_aspect("equal")
-    ax.set_title("(b) method 2: top view of the 6 lines;\nthe 9 crossings (green true, red false pairing)")
+    ax.set_title("(b) method 2, REM: top view of the 6 lines;\nthe 9 crossings (green true, red false pairing)")
     ax.set_xlabel("$x_{CK}$ (mm)"); ax.set_ylabel("$y_{CK}$ (mm)")
     ax.invert_xaxis()
     bx = fig.add_subplot(1, 4, 3)
@@ -239,19 +239,19 @@ def fig_task8():
                     fontweight="bold" if i == j else "normal")
     bx.set_xticks(range(3)); bx.set_yticks(range(3))
     bx.set_xticklabels(["B$_1$", "B$_2$", "B$_3$"]); bx.set_yticklabels(["A$_1$", "A$_2$", "A$_3$"])
-    bx.set_title("(c) method 2: REM (mm) of every\npair (A point $i$, B point $j$)")
+    bx.set_title("(c) method 2, REM: miss distance (mm)\nof every pair (A point $i$, B point $j$)")
     for s in bx.spines.values():
         s.set_visible(False)
     cx = fig.add_subplot(1, 4, 4)
     c1, c2 = r["epipolar"]["cost"], r["rem"]["cost"]
     x = np.arange(6); w = .38
-    cx.bar(x - w / 2, np.maximum(c1, 1e-3), w, color=CA, label="method 1: sum of tilt differences (deg, left axis)")
+    cx.bar(x - w / 2, np.maximum(c1, 1e-3), w, color=CA, label="method 1, epipolar: sum of tilt differences (deg, left axis)")
     cx.set_yscale("log"); cx.set_ylim(1e-3, 300)
-    cx.set_ylabel("method 1 (deg, log)")
+    cx.set_ylabel("method 1, epipolar (deg, log)")
     cx2 = cx.twinx()                                   # a second axis: method 2 is in mm, not degrees
-    cx2.bar(x + w / 2, np.maximum(c2, 1e-3), w, color=CB, label="method 2: sum of REM (mm, right axis)")
+    cx2.bar(x + w / 2, np.maximum(c2, 1e-3), w, color=CB, label="method 2, REM: sum of REM (mm, right axis)")
     cx2.set_yscale("log"); cx2.set_ylim(1e-3, 300)
-    cx2.set_ylabel("method 2 (mm, log)")
+    cx2.set_ylabel("method 2, REM (mm, log)")
     cx.text(0, 2e-3, r"$\approx 10^{-13}$", ha="center", fontsize=8)
     cx.set_xticks(x); cx.set_xticklabels(["".join(str(q + 1) for q in p) for p in PERMUTATIONS], fontsize=9)
     cx.set_xlabel("pairing: B points matched with A points 1, 2, 3")
@@ -268,19 +268,68 @@ def fig_task8_matched():
     loc = load("localized") if False else load("markers_localized_task6.npz")
     uvA, uvB = loc["vertebra_A_uv_mm"], loc["vertebra_B_uv_mm"]
     r = correspond(uvA, uvB)
-    cols = ["#1b9e77", "#d95f02", "#7570b3"]
+    cols = ["#d62728", "#2ca02c", "#1f77b4"]            # M1 red, M2 green, M3 blue (as in Task 4)
+    order = r["label"]["order"]                          # order[k] = A point that is marker k
     fig, axs = plt.subplots(1, 2, figsize=(11, 4.8))
     for ax, uv, name in ((axs[0], uvA, "A"), (axs[1], uvB, "B")):
         ax.imshow(load(f"drr_vertebra_{name}.npy"), origin="lower", cmap="gray_r",
                   extent=[-100, 100, -100, 100], alpha=.55)
-        for i in range(3):
+        for k in range(3):
+            i = order[k]                                 # A point of marker k; its partner on B is perm[i]
             q = uv[i] if name == "A" else uv[r["perm"][i]]
-            ax.plot(*q, "o", mfc="none", mec=cols[i], ms=16, mew=2.5)
-            ax.text(q[0] + 8, q[1] + 6, f"pair {i + 1}", color=cols[i], fontweight="bold")
-        ax.set_title(f"detector {name}: points found in Task 6,\ncolored by the pairing chosen in Task 8")
+            ax.plot(*q, "o", mfc="none", mec=cols[k], ms=16, mew=2.5)
+            ax.text(q[0] + 8, q[1] + 6, f"M{k + 1}", color=cols[k], fontweight="bold")
+        ax.set_title(f"detector {name}: points found in Task 6,\npaired and named M1, M2, M3 in Task 8")
         ax.set_xlabel("$u$ (mm)"); ax.set_ylabel("$v$ (mm)")
     fig.tight_layout(); fig.savefig(os.path.join(OUT, "task8_matched.png"), dpi=150); plt.close(fig)
     return r
+
+
+def fig_task8_naming():
+    """Naming of the reconstructed vertebra markers by their mutual distances (the Task 6 -> 8 -> 7 points)."""
+    loc = load("markers_localized_task6.npz")
+    r = correspond(loc["vertebra_A_uv_mm"], loc["vertebra_B_uv_mm"])
+    lab, M = r["label"], r["markers_CK"]
+    cols = ["#d62728", "#2ca02c", "#1f77b4"]
+    pairs = [(0, 1), (0, 2), (1, 2)]
+    table = [np.linalg.norm(config.MARKERS_MD_mm[i] - config.MARKERS_MD_mm[j]) for i, j in pairs]
+    P = M[list(lab["order"])]                            # reconstructed points in the order M1, M2, M3
+    meas = [np.linalg.norm(P[i] - P[j]) for i, j in pairs]
+    fig, (ax, bx) = plt.subplots(1, 2, figsize=(11, 4.4), gridspec_kw={"width_ratios": [1, 1.1]})
+    # (a) the triangle of the reconstructed markers, drawn flat from its three side lengths
+    a, b, c = meas[0], meas[1], meas[2]                  # |M1M2|, |M1M3|, |M2M3|
+    x3 = (a ** 2 + b ** 2 - c ** 2) / (2 * a)
+    xy = np.array([[0, 0], [a, 0], [x3, np.sqrt(max(b ** 2 - x3 ** 2, 0))]])
+    ax.fill(xy[:, 0], xy[:, 1], fc="#f2f2f2", ec="none")
+    for (i, j), m, t in zip(pairs, meas, table):
+        mid = (xy[i] + xy[j]) / 2
+        out = mid - xy.mean(axis=0)
+        ax.plot(*xy[[i, j]].T, color="gray", lw=1.5, zorder=1)
+        ax.text(*(mid + 0.18 * out), f"{m:.1f} mm\n(table {t:.1f})", ha="center", va="center", fontsize=9)
+    for k in range(3):
+        ax.plot(*xy[k], "o", color=cols[k], ms=14, zorder=3)
+        out = xy[k] - xy.mean(axis=0)
+        ax.text(*(xy[k] + 0.2 * out), f"M{k + 1}", color=cols[k], fontweight="bold", ha="center", va="center", fontsize=12)
+    ax.set_aspect("equal"); ax.axis("off")
+    ax.set_xlim(-0.25 * a, 1.25 * a)
+    ax.set_ylim(-0.25 * xy[2, 1], 1.35 * xy[2, 1])          # room for the marker names and the title
+    ax.set_title("(a) reconstructed vertebra markers after naming:\nmeasured distance (table distance)", pad=14)
+    # (b) cost of all 6 ways to name the three points
+    cost = lab["cost"]
+    best = int(np.argmin(cost))
+    bx.bar(np.arange(6), np.maximum(cost, 1e-2), color=[OK if q == best else "#bbbbbb" for q in range(6)])
+    for q in range(6):
+        bx.text(q, max(cost[q], 1e-2) * 1.25, f"{cost[q]:.1f}", ha="center", fontsize=9)
+    bx.set_yscale("log"); bx.set_ylim(1e-1, 300)
+    bx.set_xticks(range(6))
+    # p[k] = the A point that is marker k, so "M1 = A3" means: call point 3 of detector A marker M1
+    bx.set_xticklabels(["\n".join(f"M{k + 1}={p[k] + 1}" for k in range(3)) for p in PERMUTATIONS], fontsize=8.5)
+    bx.set_xlabel("one way to name the points (M$k$ = number of the point on detector A,\nin the order Task 6 returned them)")
+    bx.set_ylabel("sum of distance mismatches (mm, log)")
+    bx.grid(axis="y", alpha=.25)
+    bx.set_title("(b) cost of the 6 namings; the smallest wins")
+    fig.tight_layout(); fig.savefig(os.path.join(OUT, "task8_naming.png"), dpi=150); plt.close(fig)
+    return lab
 
 
 if __name__ == "__main__":
@@ -292,4 +341,6 @@ if __name__ == "__main__":
     print("REM matrix\n", np.round(rem, 2)); print("cost1 (deg)", np.round(c1, 3)); print("cost2 (mm)", np.round(c2, 3))
     r = fig_task8_matched()
     print(r["perm"], np.round(r["REM"], 4))
+    lab = fig_task8_naming()
+    print("naming order", lab["order"], "cost (mm)", np.round(lab["cost"], 2))
     print("figures written to", OUT)

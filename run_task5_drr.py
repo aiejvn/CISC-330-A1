@@ -19,14 +19,14 @@ Sphere phase (sphere R = 50 mm + three steel balls at the table positions)
     pixels in A and in B (e.g. M1 near pixel row 876 in A, row 1660 in B), and the two
     arrays are not equal (max |A - B| ~ 0.22).
 
-Vertebra phase (STL vertebra with its own 2 mm marker balls)
+Vertebra phase (STL vertebra with its own marker balls, enlarged from 2 mm to 3 mm about their centers)
   saves outputs/drr_vertebra_A.npy, drr_vertebra_B.npy   float sum d_i x_i in g/cm^2, shape (n, n), indexed [j, k]
         outputs/markers_stl_projected.npz                TRUE marker data of this DRR (Task 6 ground truth):
             CK (3, 3) STL ball centres in CK, DetA_uv_mm / DetB_uv_mm (3, 2), ImgA_px / ImgB_px (3, 2)
             (the table-based projections of Task 4 differ from these by 0.35 - 0.72 mm)
         outputs/task5_drr_vertebra.png                   picture (sum d_i x_i) with the true centres marked
 
-AI use: written with help from Claude (Anthropic), Oct 2026; reviewed and
+AI use: written with help from Claudex (Anthropic), Oct 2026; reviewed and
 tested by the group.
 """
 import os
@@ -36,7 +36,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import config, frames, drr
 from markers import load_markers
-from stl_io import read_binary_stl, split_vertebra_and_markers
+from stl_io import read_binary_stl, split_vertebra_and_markers, enlarge_ball
 from geometry import apply_transform
 from projector import project_to_detector, detector_to_image
 
@@ -68,9 +68,11 @@ def run_sphere():
 
 def run_vertebra():
     # the STL holds the bone and the three marker balls as separate closed pieces; the balls are 2 mm and sit
-    # 0.3-0.4 mm from the table, so we render the STL balls and keep their true centers as ground truth for Task 6
+    # 0.3-0.4 mm from the table. The assignment says 3 mm, so we scale each STL ball about its own center to
+    # 3 mm and keep these centers as ground truth for Task 6
     triangles = read_binary_stl(config.STL_PATH)
     bone_MD, balls_MD, centers_MD = split_vertebra_and_markers(triangles, config.MARKERS_MD_mm)
+    balls_MD = [enlarge_ball(b, c, config.MARKER_DIAMETER_mm) for b, c in zip(balls_MD, centers_MD)]
     F = frames.F_CK_from_MD()
     to_CK = lambda t: apply_transform(F, t.reshape(-1, 3)).reshape(-1, 3, 3)
     bone, balls = to_CK(bone_MD), [to_CK(b) for b in balls_MD]

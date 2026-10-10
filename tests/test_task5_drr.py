@@ -6,14 +6,14 @@ Why these checks, and what we predict before running:
     distance h from the center has length 2 sqrt(R^2 - h^2); a ray at h > R has 0.
  2. Pixel rays: the middle of pixel (k, j) must agree with F_CK_from_Det @ F_Det_from_Img
     (the route written in the README); and the ray of a pixel must hit the plane w = 0.
- 3. All markers lie inside the sphere (|M| + 1 < 50; the 2 mm balls).
+ 3. All markers lie inside the sphere (|M| + 1.5 < 50; the 3 mm balls).
  4. Corner pixel (u, v) = (-99.75, -99.75): its ray misses the sphere -> DRR value 0 exactly.
  5. Sphere-only pixel value: 0.25 * chord/10 with chord from the cross-product
     distance h = |(c - S) x d|  (a different formula than the quadratic).
  6. Marker contrast: at the pixel containing a marker's true projection (Task 4), the
-    ray passes within ~0.2 mm of the ball center, so the ball chord is ~2 mm and
-        DRR(with) - DRR(without) = (7.85 - 0.25) * 0.2 = 1.52 g/cm^2.
-    Predicted range 1.3 - 1.6. This also catches a transposed image (img[j, k] vs img[k, j]).
+    ray passes within ~0.2 mm of the ball center, so the ball chord is ~3 mm and
+        DRR(with) - DRR(without) = (7.85 - 0.25) * 0.3 = 2.28 g/cm^2.
+    Predicted range 2.0 - 2.4. This also catches a transposed image (img[j, k] vs img[k, j]).
  7. Away from the markers the images with and without markers are identical.
 
 Run from the A1 folder:   python tests/test_task5_drr.py
@@ -96,8 +96,8 @@ for pose in ("A", "B"):
     for name, (u, v) in zip(config.MARKER_NAMES, uv):
         k, j = int(np.floor((u + 100) / PIXEL_MM)), int(np.floor((v + 100) / PIXEL_MM))
         bump = img_with[j, k] - img_without[j, k]
-        check(f"pose {pose}: {name} contrast at pixel (k={k}, j={j})", 1.3 <= bump <= 1.6,
-              f"DRR(with) - DRR(without) = {bump:.4f} g/cm^2  (predicted 1.3-1.6)")
+        check(f"pose {pose}: {name} contrast at pixel (k={k}, j={j})", 2.0 <= bump <= 2.4,
+              f"DRR(with) - DRR(without) = {bump:.4f} g/cm^2  (predicted 2.0-2.4)")
 
     # 7. images identical away from the markers (outside 8 mm of every projection)
     kk, jj = np.meshgrid(np.arange(n), np.arange(n))

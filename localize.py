@@ -9,18 +9,18 @@ in the image frame, i.e. u = (k + 0.5) * 0.1 - 100 mm (see drr.py). The 100 is h
 its left edge is at -100 mm.
 
 Work on the DRR value a = sum d_i x_i itself: a steel ball adds a compact bump of
-about 1.5 to a (2 mm of steel, 7.85 g/cm^3) to whatever lies behind it.
+about 2.3 to a (3 mm of steel, 7.85 g/cm^3) to whatever lies behind it.
 
 Step 1, detection (method "peak"). A marker is a spot that is higher than the
 ground on ALL FOUR sides. For every pixel we take the mean of a small box
 around it (21 x 21 pixels = 2.1 mm, smaller than a shadow) and subtract the same
-box mean taken d = 35 pixels to the left, right, up and down. The score of the
+box mean taken d = 45 pixels to the left, right, up and down. The score of the
 pixel is the SMALLEST of the four differences. A straight bone edge or a smooth
 slope is high on one side only, so its score is about 0; a ball is high on every
 side, so its score is large. The n best-scoring pixels (at least 8 mm apart)
 are the markers. This is accurate to about a pixel.
 
-Step 2, refinement (method "centroid"). In a 61 x 61 pixel window around each
+Step 2, refinement (method "centroid"). In an 81 x 81 pixel window around each
 peak, fit a plane to the border pixels (the local background), subtract it, keep
 the pixels whose excess is above half of the peak excess and take the excess-
 weighted center of gravity. That gives the center in fractions of a pixel.
@@ -30,7 +30,7 @@ Why each part:
   - Half of the peak: keeps the shadow itself and drops noise and leftover
     background (the usual half-maximum convention; not tuned).
   - Excess weights: the deepest part of the shadow counts most (center of gravity).
-  - 61 px window, 7 px border: tuned against the true centers; a smaller window puts
+  - 81 px window, 7 px border: tuned against the true centers; a smaller window puts
     the frame on the shadow, a larger one is too curved for a plane (see WINDOW_HALF_PX).
 
 Markers are identical, so the order of the returned points is arbitrary
@@ -44,12 +44,13 @@ import config, frames
 from geometry import apply_transform
 
 BOX_PX = 21          # side of the small box (2.1 mm) that averages the center
-OFFSET_PX = 35       # distance (3.5 mm) of the four comparison boxes
+OFFSET_PX = 45       # distance (4.5 mm) of the four comparison boxes
 MIN_SEPARATION_PX = 80   # two markers are never closer than 8 mm on a detector (suppression radius)
-WINDOW_HALF_PX = 30  # refinement window is 61 x 61 pixels (6.1 mm). A shadow is about 34 px wide (half-max), so the
-                     # window needs the shadow plus a free 7 px frame: at 51 px the frame touches the shadow (sphere
-                     # error doubles); above ~71 px the plane no longer fits the curved bone (vertebra error 0.7 px at
-                     # 61 px, 1.2 px at 101 px, 1.7 px at 151 px). Measured against the true centers, Task 5/6.
+WINDOW_HALF_PX = 40  # refinement window is 81 x 81 pixels (8.1 mm). A shadow of a 3 mm ball is about 60 px wide (2 x 3 mm
+                     # magnified by 2) and its half-max width about 52 px, so the window needs the shadow plus a free
+                     # 7 px frame: at 71 px the frame touches the shadow; the larger the window, the less a plane fits the
+                     # curved bone (vertebra worst error 1.25 px at 81 px, 1.5 px at 91 px, 1.7 px at 101 px, 2.4 px at
+                     # 121 px; the sphere phase stays at 0.05 px). Measured against the true centers, Task 5/6.
 BORDER_PX = 7        # width of the frame of the window used for the background plane
 
 

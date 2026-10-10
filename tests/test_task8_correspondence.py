@@ -22,6 +22,11 @@ Why these checks, and what we predict before running:
     markers (equilateral triangle): both methods still find the pairing; (b) four markers at generic
     positions: all 4! = 24 orders of detector B are undone by both methods.
 
+ 6. Naming: the three marker-to-marker distances of the table differ by > 5 mm; whatever the
+    order of the points on A and on B (all 36), the reconstructed points come back in the order
+    M1, M2, M3 (distances of the points compared with the table). The same for the points found by
+    Task 6: each named marker within 0.5 mm of the true marker, and every wrong naming costs much more.
+
 Run from the A1 folder:   python tests/test_task8_correspondence.py
 
 AI use: written with help from Claude (Anthropic), Oct 2026; reviewed and
@@ -103,6 +108,27 @@ for order in permutations_of(4):
     r = correspond(uvA, uvB[list(order)])
     ok_all &= (r["epipolar"]["perm"] == expected and r["rem"]["perm"] == expected)
 check("4 markers: both methods undo all 24 orders of detector B", ok_all)
+
+# 6. naming the markers M1, M2, M3 from the distances between them
+dists = [np.linalg.norm(config.MARKERS_MD_mm[i] - config.MARKERS_MD_mm[j]) for i, j in ((0, 1), (0, 2), (1, 2))]
+check("table distances all differ by > 5 mm (so the naming is unique)", min(abs(dists[i] - dists[j]) for i in range(3) for j in range(i + 1, 3)) > 5,
+      f"(M1-M2 {dists[0]:.1f}, M1-M3 {dists[1]:.1f}, M2-M3 {dists[2]:.1f} mm)")
+ok_all, worst = True, 0.0
+for orderA in PERMUTATIONS:
+    for orderB in PERMUTATIONS:
+        r = correspond(A[list(orderA)], B[list(orderB)])
+        ok_all &= bool(np.allclose(r["labelled_CK"], true_M, atol=1e-9))
+        worst = max(worst, r["label"]["error"])
+check("true projections, all 36 orders of A and B: labelled_CK is exactly M1, M2, M3", ok_all,
+      f"(largest distance mismatch {worst:.1e} mm)")
+for phase, (truth, true_CK, rem_tol) in cases.items():
+    uvA, uvB = loc[f"{phase}_A_uv_mm"], loc[f"{phase}_B_uv_mm"]
+    r = correspond(uvA, uvB)
+    err = np.linalg.norm(r["labelled_CK"] - true_CK, axis=1)       # true_CK is in the order M1, M2, M3
+    c = np.sort(r["label"]["cost"])
+    check(f"{phase} (Task 6 points): marker k is named Mk and lies within 0.5 mm of the true Mk", np.all(err < 0.5),
+          f"(error {np.round(err, 3)} mm, distance mismatch {r['label']['error']:.3f} mm, "
+          f"second-best naming costs {c[1]:.1f} mm vs {c[0]:.2f} mm)")
 
 report.append(f"\nNumber of failed checks: {n_failed}  ->  "
               f"{'ALL CHECKS PASSED' if n_failed == 0 else 'SOME CHECKS FAILED, see FAIL above'}")

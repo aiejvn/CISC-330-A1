@@ -22,17 +22,24 @@ reconstruct.reconstruct_point. Two rays that really come from one marker meet
 (REM ~ 0); rays from two different markers usually pass each other by many mm.
 Cost of a pairing = sum of the N REMs (mm). The pairing with the smallest cost wins.
 
-The markers are identical spheres, so nothing in the images tells them apart, and
-neither method names M1, M2, M3: they only give the pairing.
 Both methods can fail only when a wrong pairing also fits (the ambiguity of Task 9:
 markers in one plane through S_A and S_B, which then have the same tilt), so
-`correspond` also returns the margin second-best cost / best cost.
+`margin` gives the ratio second-best cost / best cost.
+
+Naming M1, M2, M3. The markers are identical spheres, so the images and the pairing do not
+say which marker is which; the pairing only gives N 3-D points in an arbitrary order. The
+distances between the markers are known from the marker table and a rigid motion does not
+change them, so `label_markers` tries every order of the reconstructed points and keeps the
+one whose distances best match the table (the three distances of our markers are all
+different: 64.2, 53.9 and 33.6 mm). `correspond` returns the result as labelled_CK, the
+reconstructed markers in the order M1, M2, M3.
 
 AI use: written with help from Claude (Anthropic), Oct 2026; reviewed and
 tested by the group.
 """
 import itertools
 import numpy as np
+import config
 import frames
 from reconstruct import reconstruct_point, back_projection_line
 
@@ -98,14 +105,48 @@ def margin(cost):
     return s[1] / max(s[0], 1e-12)
 
 
-def correspond(uv_A, uv_B):
+def pair_distances(points):
+    """The N(N-1)/2 distances (mm) between the rows of `points`, in the order (0,1), (0,2), ..., (1,2), ..."""
+    i, j = np.triu_indices(len(points), k=1)
+    return np.linalg.norm(points[i] - points[j], axis=1)
+
+
+def label_markers(points_CK, model=None):
     """
-    Run both methods on the N unordered points of each detector ((N, 2) mm arrays).
+    Name the N reconstructed points M1..MN by the distances between the markers.
+    A rigid motion does not change distances, so the spacing known from the marker table
+    (config.MARKERS_MD_mm) is also the spacing of the reconstructed points in the CK frame.
+    Try every order of the points; cost = sum over marker pairs of |measured - table distance| (mm).
+    Returns dict: order (order[k] = index of the point that is marker k, so points_CK[order] is
+    in the order M1, M2, ...), cost (N!,) per order in permutations_of(N) order, error (mm, largest
+    distance mismatch of the best order).
+    """
+    model = config.MARKERS_MD_mm if model is None else np.asarray(model, float)
+    d_model = pair_distances(model)
+    perms = permutations_of(len(points_CK))
+    cost = np.array([np.abs(pair_distances(points_CK[list(p)]) - d_model).sum() for p in perms])
+    best = perms[int(cost.argmin())]
+    error = float(np.abs(pair_distances(points_CK[list(best)]) - d_model).max())
+    return {"order": best, "cost": cost, "error": error}
+
+
+def correspond(uv_A, uv_B, model=None):
+    """
+    Run both methods on the N unordered points of each detector ((N, 2) mm arrays), then name the markers.
     Returns dict: epipolar / rem (the two method results), agree (same pairing?), perm (the
-    pairing to use = method 1), markers_CK (N, 3) reconstructed with it, REM (N,).
+    pairing to use = method 1), markers_CK (N, 3) reconstructed with it, REM (N,) -- both in
+    the order of detector A's points -- and the naming: label (label_markers result), labelled_CK /
+    labelled_REM (N, 3) / (N,) in the order M1, M2, M3. `model` = marker table in any frame
+    (default config.MARKERS_MD_mm); when it does not have N rows the naming is skipped (label = None).
     """
     uv_A, uv_B = np.asarray(uv_A, float), np.asarray(uv_B, float)
     r1, r2 = match_by_epipolar(uv_A, uv_B), match_by_rem(uv_A, uv_B)   # two ways to test "do these two rays meet"
     M, rem = reconstruct_pairing(uv_A, uv_B, r1["perm"])
-    return {"epipolar": r1, "rem": r2, "agree": r1["perm"] == r2["perm"],
-            "perm": r1["perm"], "markers_CK": M, "REM": rem}
+    out = {"epipolar": r1, "rem": r2, "agree": r1["perm"] == r2["perm"],
+           "perm": r1["perm"], "markers_CK": M, "REM": rem,
+           "label": None, "labelled_CK": None, "labelled_REM": None}
+    table = config.MARKERS_MD_mm if model is None else np.asarray(model, float)
+    if len(table) == len(M):
+        lab = label_markers(M, table)
+        out.update(label=lab, labelled_CK=M[list(lab["order"])], labelled_REM=rem[list(lab["order"])])
+    return out

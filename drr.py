@@ -8,7 +8,7 @@ with d_i the length of the ray inside object i (in cm) and x_i its density (g/cm
 We store this sum (g/cm^2); I0, I and k are not needed to build the DRR.
 
 Objects (sphere phase): a sphere (R = 50 mm, density 0.25) at the CK center and
-three steel balls (2 mm diameter) at the marker positions, all inside the sphere.
+three steel balls (3 mm diameter) at the marker positions, all inside the sphere.
 Along a ray, a ball REPLACES sphere material, so
     sum d x = x_sphere * (l_sphere - sum l_ball) + x_steel * sum l_ball.
 
@@ -22,7 +22,7 @@ import numpy as np
 import config, frames
 from geometry import apply_transform, line_sphere_chord
 
-MARKER_DIAMETER_mm = 2.0   # all markers are 2 mm (the STL balls too)
+MARKER_DIAMETER_mm = config.MARKER_DIAMETER_mm   # all markers are 3 mm (the STL balls are enlarged to it)
 
 
 def n_pixels(pixel_mm):

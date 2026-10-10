@@ -90,6 +90,17 @@ def split_vertebra_and_markers(triangles, marker_table_MD):
     return triangles[~is_ball], [triangles[piece == p] for p in ball_ids], centers[order]
 
 
+def enlarge_ball(ball_triangles, center, diameter_mm):
+    """
+    Scale a ball's surface about its own center so that its diameter becomes `diameter_mm`.
+    The STL balls are 2 mm across (tools/check_stl_markers.py); the assignment says 3 mm.
+    The diameter is measured as 2 x the mean distance of the corner points to the center.
+    """
+    P = ball_triangles.reshape(-1, 3)
+    radius = np.linalg.norm(np.unique(P, axis=0) - center, axis=1).mean()
+    return center + (ball_triangles - center) * (diameter_mm / 2.0 / radius)
+
+
 def corner_points(triangles):
     """All distinct corner points of the triangles, shape (K, 3)."""
     return np.unique(triangles.reshape(-1, 3), axis=0)
