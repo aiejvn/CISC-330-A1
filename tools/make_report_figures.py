@@ -42,16 +42,17 @@ def fig_task5_geometry():
         T = C + 100 * s * v
         ax.plot(*np.array([S, T]).T, color=CA, lw=2 if s == 0.4 else 1)
     ax.plot(*S, "o", color=CA, ms=9)
-    ax.text(S[0] - 30, S[1] + 40, r"source $S_A$", ha="right")
-    ax.text(C[0] + 60, C[1] - 60, "detector A\n(2000 pixels)", color=CA)
+    ax.text(S[0] - 30, S[1] + 40, r"source $S_A$", ha="left")
+    ax.text(C[0] - 100, C[1] - 85, "detector A (2000 pixels)", color=CA, va="center")
     ax.text(0, -75, "sphere, $R=50$ mm\n$\\rho=0.25$ g/cm$^3$", ha="center", va="top", fontsize=9)
     ax.annotate("steel balls", xy=(M_CK[0, 0], M_CK[0, 1]), xytext=(200, 120), arrowprops=dict(arrowstyle="->"))
     T = C + 40 * v
     ax.annotate("one ray per pixel,\nthrough the pixel middle", xy=(S + 0.35 * (T - S)),
-                xytext=(-800, -600), color=CA, arrowprops=dict(arrowstyle="->", color=CA))
+                xytext=(-100, -500), color=CA, arrowprops=dict(arrowstyle="->", color=CA))
     ax.set_aspect("equal"); ax.set_xlim(-850, 900); ax.set_ylim(-850, 850)
+    ax.invert_xaxis()                                   # seen from the feet: +x to the left
     ax.set_xlabel("$x_{CK}$ (mm)"); ax.set_ylabel("$y_{CK}$ (mm)")
-    ax.set_title("(a) one detector, seen from the feet\n($z$ points out of the page)")
+    ax.set_title("(a) one detector, seen from the feet\n($z$ points into the page)")
     # (b) one ray through the sphere and a ball
     bx.add_patch(Circle((0, 0), 1, fc="#dddddd", ec="k"))
     bx.add_patch(Circle((0.25, 0.1), 0.18, fc="#444444", ec="k"))
