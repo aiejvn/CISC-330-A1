@@ -304,16 +304,22 @@ def fig_task8_naming():
     ax.fill(xy[:, 0], xy[:, 1], fc="#f2f2f2", ec="none")
     for (i, j), m, t in zip(pairs, meas, table):
         mid = (xy[i] + xy[j]) / 2
-        out = mid - xy.mean(axis=0)
+        e = xy[j] - xy[i]
+        n = np.array([-e[1], e[0]]) / np.linalg.norm(e)  # unit normal of the side, turned away from the middle
+        if np.dot(n, mid - xy.mean(axis=0)) < 0:
+            n = -n
         ax.plot(*xy[[i, j]].T, color="gray", lw=1.5, zorder=1)
-        ax.text(*(mid + 0.18 * out), f"{m:.1f} mm\n(table {t:.1f})", ha="center", va="center", fontsize=9)
+        # anchor the label on its side nearest the edge so the text sits fully outside the triangle
+        ha = "left" if n[0] > 0.3 else "right" if n[0] < -0.3 else "center"
+        va = "bottom" if n[1] > 0.3 else "top" if n[1] < -0.3 else "center"
+        ax.text(*(mid + 0.04 * a * n), f"{m:.1f} mm\n(table {t:.1f})", ha=ha, va=va, fontsize=9)
     for k in range(3):
         ax.plot(*xy[k], "o", color=cols[k], ms=14, zorder=3)
         out = xy[k] - xy.mean(axis=0)
         ax.text(*(xy[k] + 0.2 * out), f"M{k + 1}", color=cols[k], fontweight="bold", ha="center", va="center", fontsize=12)
     ax.set_aspect("equal"); ax.axis("off")
-    ax.set_xlim(-0.25 * a, 1.25 * a)
-    ax.set_ylim(-0.25 * xy[2, 1], 1.35 * xy[2, 1])          # room for the marker names and the title
+    ax.set_xlim(-0.3 * a, 1.3 * a)
+    ax.set_ylim(-0.5 * xy[2, 1], 1.35 * xy[2, 1])          # room for the marker names and the title
     ax.set_title("(a) reconstructed vertebra markers after naming:\nmeasured distance (table distance)", pad=14)
     # (b) cost of all 6 ways to name the three points
     cost = lab["cost"]
