@@ -1,0 +1,35 @@
+==============================================================================
+TASK 9: MARKER AMBIGUITY DETECTION TEST REPORT
+==============================================================================
+
+--- CASE 1: Standard Non-Ambiguous Markers ---
+REM Matrix (mm):
+[[ 0.      8.5004 16.8134]
+ [ 9.283   0.      8.15  ]
+ [17.3258  7.6795  0.    ]]
+Method 1 (REM matrix) detected ambiguity:     False (Expected: False)
+Method 2 (Rigid geometry) detected ambiguity: False (Expected: False)
+Case 1 Status: PASS
+
+--- CASE 2: Engineered Ambiguity (Coplanar Epipolar Rays) ---
+Engineered 3D markers in CK frame (M1 and M2 share z = 0.0):
+  M1: [ 19. -28.   0.]
+  M2: [-43. -14.   0.]
+  M3: [ -2. -48.  -6.]
+
+Computed Ambiguous REM Matrix (mm):
+[[0.     0.     5.8318]
+ [0.     0.     6.0413]
+ [6.0096 5.6925 0.    ]]
+
+Method 1: Ambiguity detected: True
+          Near-zero candidates per row: [2 2 1], per column: [2 2 1]
+Method 2: Ambiguity detected: True
+          Number of low-REM permutations: 2
+          Candidate 1: Permutation (0, 1, 2) | Sum REM = 0.0000 mm | Tri-distance error = 4.0596 mm
+          Candidate 2: Permutation (1, 0, 2) | Sum REM = 0.0000 mm | Tri-distance error = 24.9228 mm
+Case 2 Status: PASS
+
+==============================================================================
+FINAL RESULT: ALL CHECKS PASSED
+==============================================================================
